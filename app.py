@@ -509,17 +509,19 @@ with tabs[0]:
 # TAB 2: EMAIL DISTRIBUTION ENGINE (GMAIL SMTP)
 # ------------------------------------------
 with tabs[1]:
-    st.header("Email Distribution Engine (Gmail SMTP)")
-    st.caption("Send credentials directly to recipients using Google Gmail SMTP server (`smtp.gmail.com`).")
+    st.header("Email Distribution Engine")
+    st.caption("Send credentials directly to recipients using your configured email sender.")
 
     col_smtp, col_template = st.columns([1, 1.2])
 
     with col_smtp:
-        st.subheader("🔑 Gmail SMTP Credentials")
-        gmail_server = st.text_input("SMTP Host", value="smtp.gmail.com", disabled=True)
-        gmail_port = st.number_input("SMTP Port (SSL/TLS)", value=465)
-        sender_email = st.text_input("Gmail Address", value="your.email@gmail.com")
-        app_password = st.text_input("Gmail App Password", type="password", help="Use an 16-character App Password generated from Google Account Security settings.")
+        st.subheader("✉️ Sender Configuration")
+        
+        # Load sender email from st.secrets if available, else default to text input
+        default_sender = st.secrets.get("GMAIL_ADDRESS", "your.email@gmail.com") if hasattr(st, "secrets") else "your.email@gmail.com"
+        sender_email = st.text_input("Sender Email Address", value=default_sender)
+        
+        st.info("🔒 **Security Active:** Passwords and SMTP authentication credentials are automatically loaded securely from backend Secrets.")
 
     with col_template:
         st.subheader("📧 Email Message Template")
@@ -542,9 +544,18 @@ Mental Health First Aid Organization"""
         email_body = st.text_area("Email Body Template", value=default_gmail_body, height=200)
 
     st.divider()
-    if st.button("📨 Dispatch Batch Emails via Gmail SMTP", type="primary"):
-        if not sender_email or not app_password:
-            st.error("Please enter your Gmail address and 16-character App Password.")
+    if st.button("📨 Dispatch Batch Emails", type="primary"):
+        # Retrieve password from Streamlit Secrets or Environment Variables
+        app_password = None
+        if hasattr(st, "secrets") and "GMAIL_APP_PASSWORD" in st.secrets:
+            app_password = st.secrets["GMAIL_APP_PASSWORD"]
+        else:
+            app_password = os.environ.get("GMAIL_APP_PASSWORD")
+
+        if not app_password:
+            st.error("❌ Email password missing! Please set `GMAIL_APP_PASSWORD` in your Streamlit Secrets (`.streamlit/secrets.toml`).")
+        elif not sender_email:
+            st.error("Please enter a valid sender email address.")
         else:
             conn = sqlite3.connect(DB_FILE)
             df_pending = pd.read_sql_query("SELECT * FROM credentials", conn)
@@ -554,7 +565,7 @@ Mental Health First Aid Organization"""
             progress_bar = st.progress(0)
 
             try:
-                server = smtplib.SMTP_SSL("smtp.gmail.com", gmail_port)
+                server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
                 server.login(sender_email, app_password)
 
                 for idx, row in df_pending.iterrows():
@@ -575,10 +586,9 @@ Mental Health First Aid Organization"""
                     progress_bar.progress((idx + 1) / len(df_pending))
 
                 server.quit()
-                st.success(f"✅ Dispatched {success_count} emails successfully via Gmail SMTP!")
+                st.success(f"✅ Dispatched {success_count} emails successfully!")
             except Exception as e:
-                st.error(f"Gmail SMTP Error: {e}")
-                st.info("Ensure you are using a 16-character 'Gmail App Password' (not your standard password) and 2-Step Verification is enabled on your Google Account.")
+                st.error(f"SMTP Error: {e}")
 
 # ------------------------------------------
 # TAB 3: VIRAL ANALYTICS
