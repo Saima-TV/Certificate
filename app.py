@@ -117,7 +117,6 @@ def create_default_template(style="Classic Blue"):
     if style == "Classic Blue":
         img = Image.new("RGB", (1200, 850), color="#FFFFFF")
         draw = ImageDraw.Draw(img)
-        # Ornate Blue Border
         draw.rectangle([20, 20, 1180, 830], outline="#1E3A8A", width=8)
         draw.rectangle([35, 35, 1165, 815], outline="#3B82F6", width=2)
     elif style == "Elegant Gold":
@@ -312,7 +311,7 @@ tabs = st.tabs([
 # TAB 1: CANVA-LIKE GRAPHIC DESIGNER
 # ------------------------------------------
 with tabs[0]:
-    # Top Bar (Header like image)
+    # Top Bar Controls
     top_bar_col1, top_bar_col2, top_bar_col3 = st.columns([3, 2, 1.5])
     with top_bar_col1:
         st.caption("New Design Template")
@@ -325,7 +324,7 @@ with tabs[0]:
 
     st.divider()
 
-    # Canva Layout: Left Toolbar Navigation vs Right Studio Canvas
+    # Canva Layout Structure: Left Toolbar Navigation vs Right Studio Canvas
     col_nav_bar, col_sidebar_menu, col_studio = st.columns([0.6, 2.2, 5.2])
 
     with col_nav_bar:
@@ -341,10 +340,6 @@ with tabs[0]:
             st.subheader("All Templates")
             st.markdown("##### Certificates")
             template_style = st.selectbox("Preset Template Base", ["Classic Blue", "Elegant Gold", "Modern Dark"])
-            
-            st.markdown("##### Pre-designed Samples")
-            st.image("https://via.placeholder.com/300x200/1E3A8A/FFFFFF?text=Certificate+of+Participation", caption="Certificate Sample")
-            st.image("https://via.placeholder.com/300x200/D97706/FFFFFF?text=Certificate+of+Excellence", caption="Excellence Sample")
 
         elif nav_tool == "Uploads":
             st.subheader("Upload Assets")
@@ -360,23 +355,18 @@ with tabs[0]:
 
         elif nav_tool == "Text":
             st.subheader("Text Formatting")
-            st.caption("Customize headers, dynamic attributes, and body text.")
-
-            # Title
             t_show = st.checkbox("Show Title", value=True)
             t_text = st.text_input("Title Text", value="Certificate of Participation")
             t_size = st.slider("Title Font Size", 10, 80, 42)
             t_color = st.color_picker("Title Color", "#1E3A8A")
 
             st.divider()
-            # Issuer / Organization Name
             iss_show = st.checkbox("Show Organization Name", value=True)
             iss_text = st.text_input("Organization", value="Mental Health First Aid Organization")
             iss_size = st.slider("Organization Font Size", 10, 40, 20)
             iss_color = st.color_picker("Organization Color", "#3B82F6")
 
             st.divider()
-            # Description Text
             desc_show = st.checkbox("Show Description", value=True)
             desc_text = st.text_area("Body Text", value="Participants learn skills for providing initial help to individuals experiencing mental health challenges.")
             desc_size = st.slider("Description Size", 10, 30, 15)
@@ -384,30 +374,24 @@ with tabs[0]:
 
         elif nav_tool == "Attributes":
             st.subheader("Dynamic Attributes")
-            st.caption("Attributes automatically map to recipient metadata.")
-
-            # Name Attribute
             n_show = st.checkbox("Show Recipient Name", value=True)
             n_use_brackets = st.checkbox("Preview as [recipient.name]", value=True)
             n_size = st.slider("Name Size", 10, 90, 48)
             n_color = st.color_picker("Name Color", "#0F172A")
 
             st.divider()
-            # Course Attribute
             c_show = st.checkbox("Show Course Attribute", value=True)
             c_prefix = st.text_input("Course Label Prefix", value="has completed")
             c_size = st.slider("Course Size", 10, 60, 26)
             c_color = st.color_picker("Course Color", "#1E293B")
 
             st.divider()
-            # Issue Date Attribute
             d_show = st.checkbox("Show Date Attribute", value=True)
             d_prefix = st.text_input("Date Label Prefix", value="Training Date:")
             d_size = st.slider("Date Size", 10, 40, 16)
             d_color = st.color_picker("Date Color", "#334155")
 
             st.divider()
-            # Credential ID / UUID Attribute
             id_show = st.checkbox("Show Credential ID Attribute", value=True)
             id_use_brackets = st.checkbox("Preview as [certificate.uuid]", value=True)
             id_prefix = st.text_input("ID Label Prefix", value="Issue Date / ID:")
@@ -423,7 +407,6 @@ with tabs[0]:
 
         elif nav_tool == "Layers":
             st.subheader("Canvas Layering Coordinates")
-            st.caption("Adjust X/Y coordinate positioning on canvas (1200x850)")
             t_x, t_y = st.slider("Title X", 0, 1200, 200), st.slider("Title Y", 0, 850, 100)
             n_x, n_y = st.slider("Name X", 0, 1200, 200), st.slider("Name Y", 0, 850, 280)
             c_x, c_y = st.slider("Course X", 0, 1200, 200), st.slider("Course Y", 0, 850, 380)
@@ -500,7 +483,6 @@ with tabs[0]:
                     cursor = conn.cursor()
                     
                     count = 0
-                    # For final rendering, remove bracket placeholders
                     elem_cfg_final = elem_cfg.copy()
                     elem_cfg_final['name']['placeholders'] = False
                     elem_cfg_final['id']['placeholders'] = False
@@ -585,7 +567,10 @@ Mental Health First Aid Organization"""
 
                 for idx, row in df_pending.iterrows():
                     v_url = f"{st.session_state['app_host_url']}/?id={row['credential_id']}"
-                    custom_body = email_body.replace("{{recipient_name}}", row['recipient_name'])                                            .replace("{{course_name}}", row['course_name'])                                            .replace("{{credential_id}}", row['credential_id'])                                            .replace("{{verification_url}}", v_url)
+                    custom_body = email_body.replace("{{recipient_name}}", row['recipient_name'])\
+                                            .replace("{{course_name}}", row['course_name'])\
+                                            .replace("{{credential_id}}", row['credential_id'])\
+                                            .replace("{{verification_url}}", v_url)
 
                     msg = MIMEMultipart()
                     msg['From'] = sender_email
