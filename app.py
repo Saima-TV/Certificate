@@ -345,7 +345,7 @@ with tabs[0]:
             st.caption("CSV header schema: `name`, `email`, `course`, `date`")
 
         elif nav_tool == "Text":
-            st.subheader("Text Elements")
+            st.subheader("Text Formatting")
             with st.expander("Main Title", expanded=True):
                 st.session_state['t_show'] = st.checkbox("Show Title", value=st.session_state['t_show'])
                 st.session_state['t_text'] = st.text_input("Title Text", value=st.session_state['t_text'])
@@ -422,8 +422,20 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("Studio Canvas Preview")
+        st.subheader("✏️ Studio Text Editor & Live Canvas")
         
+        # Interactive Text Editor Overlays
+        with st.expander("📝 Live Text Content Editor", expanded=True):
+            ed_col1, ed_col2 = st.columns(2)
+            with ed_col1:
+                st.session_state['t_text'] = st.text_input("Certificate Title", value=st.session_state['t_text'], key="editor_title")
+                st.session_state['iss_text'] = st.text_input("Organization / Issuer", value=st.session_state['iss_text'], key="editor_iss")
+            with ed_col2:
+                st.session_state['c_prefix'] = st.text_input("Course Completion Prefix", value=st.session_state['c_prefix'], key="editor_c_pref")
+                st.session_state['d_prefix'] = st.text_input("Date Prefix Label", value=st.session_state['d_prefix'], key="editor_d_pref")
+            
+            st.session_state['desc_text'] = st.text_area("Certificate Description Body", value=st.session_state['desc_text'], key="editor_desc")
+
         if st.session_state['uploaded_bg']:
             base_img = Image.open(st.session_state['uploaded_bg'])
         else:
@@ -441,7 +453,7 @@ with tabs[0]:
             sample_v_url,
             elem_cfg
         )
-        st.image(preview_canvas, caption="Studio Live Canvas", use_container_width=True)
+        st.image(preview_canvas, caption=f"Live Studio Output (Target: {sample_v_url})", use_container_width=True)
 
         st.divider()
         if st.button("🚀 Process Batch & Generate Certificates", type="primary", use_container_width=True):
@@ -461,7 +473,7 @@ with tabs[0]:
                 with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     for idx, row in df_recipients.iterrows():
                         cred_id = str(uuid.uuid4())
-                        v_url = f"?id={cred_id}"
+                        v_url = f"https://certificate-tv.streamlit.app/?id={cred_id}"
                         
                         cert_out = render_dynamic_certificate(
                             base_img, row['name'], row['course'], str(row['date']), cred_id, v_url, elem_cfg_final
