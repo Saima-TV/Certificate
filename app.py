@@ -78,7 +78,7 @@ def seed_dummy_data():
     
     if count == 0:
         dummy_creds = [
-            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "Mental Health First Aid Standard", "2026-08-19", "VALID"),
+            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@techvalley.pk", "Digital Marketing", "2026-08-19", "VALID"),
             ("812ab341-12cd-4123-8821-b6072dd54fa1", "Alex Chen", "alex@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
         ]
         cursor.executemany("""
@@ -239,7 +239,7 @@ if target_id:
         
         default_cfg = {
             'title': {'show': True, 'text': 'Certificate of Participation', 'x': 250, 'y': 100, 'size': 44, 'color': '#1E3A8A'},
-            'issuer': {'show': True, 'text': 'Mental Health First Aid Organization', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
+            'issuer': {'show': True, 'text': 'Gemini Notebook', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
             'name': {'show': True, 'x': 250, 'y': 280, 'size': 48, 'color': '#1E293B', 'placeholders': False},
             'course': {'show': True, 'prefix': 'has completed', 'x': 250, 'y': 380, 'size': 28, 'color': '#0F172A'},
             'desc': {'show': True, 'text': 'Participants learn skills for providing support to individuals in need.', 'x': 250, 'y': 440, 'size': 16, 'color': '#64748B'},
@@ -430,7 +430,7 @@ with tabs[0]:
             base_img = create_default_template(st.session_state['template_style'])
 
         sample_uuid = "916bc487-09cc-4659-9794-a7072dd65ec7"
-        sample_v_url = f"?id={sample_uuid}"
+        sample_v_url = f"https://certificate-tv.streamlit.app/?id={sample_uuid}"
 
         preview_canvas = render_dynamic_certificate(
             base_img,
