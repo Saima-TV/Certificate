@@ -1,7 +1,7 @@
 """
 Digital Credential Issuance, Verification & Analytics Platform
 Built with Streamlit, Pillow, SQLite, and Plotly
-Canva-style UI Layout, Gmail SMTP, and Dynamic Verification QR Codes
+Streamlined Studio UI with Dynamic Verification QR Codes
 """
 
 import streamlit as st
@@ -11,9 +11,9 @@ import io
 import zipfile
 import urllib.parse
 import smtplib
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
 import pandas as pd
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -133,23 +133,23 @@ def create_default_template(style="Classic Blue"):
 
 def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, elem_cfg):
     """
-    Renders certificate elements onto base image canvas with exact positions and dynamic labels.
+    Renders certificate elements onto base image canvas using exact px sizes and coordinates.
     """
     img = base_img.copy().convert("RGB")
     draw = ImageDraw.Draw(img)
 
-    def get_font(size):
+    def get_font(size_px):
         try:
-            return ImageFont.truetype("arial.ttf", size)
+            return ImageFont.truetype("arial.ttf", size_px)
         except IOError:
             return ImageFont.load_default()
 
-    # Header / Title
+    # Title / Header
     if elem_cfg['title']['show']:
         font = get_font(elem_cfg['title']['size'])
         draw.text((elem_cfg['title']['x'], elem_cfg['title']['y']), elem_cfg['title']['text'], fill=elem_cfg['title']['color'], font=font)
 
-    # Sub-header / Issuer Name
+    # Issuer / Organization Name
     if elem_cfg['issuer']['show']:
         font = get_font(elem_cfg['issuer']['size'])
         draw.text((elem_cfg['issuer']['x'], elem_cfg['issuer']['y']), elem_cfg['issuer']['text'], fill=elem_cfg['issuer']['color'], font=font)
@@ -160,12 +160,12 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
         display_name = f"[{r_name}]" if elem_cfg['name']['placeholders'] else r_name
         draw.text((elem_cfg['name']['x'], elem_cfg['name']['y']), display_name, fill=elem_cfg['name']['color'], font=font)
 
-    # Course Name Tag
+    # Course / Program Tag
     if elem_cfg['course']['show']:
         font = get_font(elem_cfg['course']['size'])
         draw.text((elem_cfg['course']['x'], elem_cfg['course']['y']), f"{elem_cfg['course']['prefix']} {c_name}", fill=elem_cfg['course']['color'], font=font)
 
-    # Description Text
+    # Description
     if elem_cfg['desc']['show']:
         font = get_font(elem_cfg['desc']['size'])
         draw.text((elem_cfg['desc']['x'], elem_cfg['desc']['y']), elem_cfg['desc']['text'], fill=elem_cfg['desc']['color'], font=font)
@@ -175,13 +175,13 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
         font = get_font(elem_cfg['date']['size'])
         draw.text((elem_cfg['date']['x'], elem_cfg['date']['y']), f"{elem_cfg['date']['prefix']} {i_date}", fill=elem_cfg['date']['color'], font=font)
 
-    # Credential ID
+    # Credential ID / UUID
     if elem_cfg['id']['show']:
         font = get_font(elem_cfg['id']['size'])
         display_id = f"[certificate.uuid]" if elem_cfg['id']['placeholders'] else c_id
         draw.text((elem_cfg['id']['x'], elem_cfg['id']['y']), f"{elem_cfg['id']['prefix']} {display_id}", fill=elem_cfg['id']['color'], font=font)
 
-    # QR Code Linked strictly to Digital Credential Verification URL
+    # Verification QR Code
     if elem_cfg['qr']['show']:
         qr_img = generate_qr_code(v_url)
         qr_img = qr_img.resize((elem_cfg['qr']['size'], elem_cfg['qr']['size']))
@@ -197,7 +197,7 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
 # 3. PAGE CONFIG & ROUTING
 # ==========================================
 st.set_page_config(
-    page_title="Credsverse Automation & Verification Platform",
+    page_title="Digital Credential Engine",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -210,9 +210,6 @@ query_params = st.query_params
 target_id = query_params.get("id", None)
 utm_source = query_params.get("utm_source", "")
 utm_medium = query_params.get("utm_medium", "")
-
-if "app_host_url" not in st.session_state:
-    st.session_state["app_host_url"] = "https://credsverse.streamlit.app"
 
 # ==========================================
 # 4. PUBLIC VERIFICATION PORTAL (?id=UUID)
@@ -229,8 +226,8 @@ if target_id:
     st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>🎓 Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
     
     if not record:
-        st.error(f"❌ Invalid Credential ID: `{target_id}`. Verification failed. Record not found.")
-        st.info("Please verify the URL or contact the issuing organization.")
+        st.error(f"❌ Invalid Credential ID: `{target_id}`. Verification failed.")
+        st.info("Please check the link or contact the issuing organization.")
     else:
         c_id, r_name, r_email, c_name, i_date, c_status = record
         st.success(f"✅ **AUTHENTIC CREDENTIAL VERIFIED** | Issued to **{r_name}**")
@@ -238,7 +235,7 @@ if target_id:
         col_cert, col_meta = st.columns([1.6, 1])
         
         base_template = create_default_template("Classic Blue")
-        v_url = f"{st.session_state['app_host_url']}/?id={c_id}"
+        v_url = f"?id={c_id}"
         
         default_cfg = {
             'title': {'show': True, 'text': 'Certificate of Participation', 'x': 250, 'y': 100, 'size': 44, 'color': '#1E3A8A'},
@@ -287,7 +284,7 @@ if target_id:
             st.markdown(f'<a href="{linkedin_share_url}" target="_blank"><button style="width:100%; background-color:#0A66C2; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Add to LinkedIn Profile</button></a>', unsafe_allow_html=True)
 
             st.markdown("---")
-            if st.button("← Back to Platform Admin"):
+            if st.button("← Back to Admin Console"):
                 st.query_params.clear()
                 st.rerun()
 
@@ -296,17 +293,17 @@ if target_id:
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("🎓 Digital Credential Engine")
+st.title("🎓 Digital Credential Management Platform")
 
 tabs = st.tabs([
     "🎨 1. Graphic Designer & Template Engine",
-    "📧 2. Email Distribution (Gmail SMTP)",
-    "📈 3. Viral Analytics & KPIs",
+    "📧 2. Email Distribution Engine",
+    "📈 3. Analytics Dashboard",
     "🔍 4. Credentials Registry"
 ])
 
 # ------------------------------------------
-# TAB 1: CANVA-LIKE GRAPHIC DESIGNER
+# TAB 1: GRAPHIC DESIGNER & TEMPLATE ENGINE
 # ------------------------------------------
 with tabs[0]:
     # Persistent State Initialization
@@ -326,110 +323,93 @@ with tabs[0]:
         if k not in st.session_state:
             st.session_state[k] = v
 
-    # Top Bar Controls
-    top_bar_col1, top_bar_col2, top_bar_col3 = st.columns([3, 2, 1.5])
-    with top_bar_col1:
-        st.caption("New Design Template")
-        design_title = st.text_input("Design Name", value="My design #1", label_visibility="collapsed")
-    with top_bar_col2:
-        host_url_input = st.text_input("Platform Base URL (for QR Code Verification)", value=st.session_state["app_host_url"])
-        st.session_state["app_host_url"] = host_url_input
-    with top_bar_col3:
-        paper_size = st.radio("Paper Size", ["A4", "US Letter"], horizontal=True)
-
-    st.divider()
-
-    col_nav_bar, col_sidebar_menu, col_studio = st.columns([0.6, 2.2, 5.2])
+    col_nav_bar, col_sidebar_menu, col_studio = st.columns([0.7, 2.5, 5.2])
 
     with col_nav_bar:
         st.markdown("**Tools**")
         nav_tool = st.radio(
             "Nav",
-            options=["Templates", "Uploads", "Elements", "Text", "Attributes", "QR Codes", "Layers"],
+            options=["Templates", "Uploads", "Text", "Attributes", "QR Code", "Layers"],
             label_visibility="collapsed"
         )
 
     with col_sidebar_menu:
         if nav_tool == "Templates":
-            st.subheader("All Templates")
-            st.markdown("##### Certificates")
-            st.session_state['template_style'] = st.selectbox("Preset Template Base", ["Classic Blue", "Elegant Gold", "Modern Dark"])
+            st.subheader("Base Template")
+            st.session_state['template_style'] = st.selectbox("Style Preset", ["Classic Blue", "Elegant Gold", "Modern Dark"])
 
         elif nav_tool == "Uploads":
             st.subheader("Upload Assets")
-            st.session_state['uploaded_bg'] = st.file_uploader("Add Background Image", type=["png", "jpg", "jpeg"])
-            st.session_state['uploaded_csv'] = st.file_uploader("Upload Batch Recipients CSV", type=["csv"])
+            st.session_state['uploaded_bg'] = st.file_uploader("Custom Background Image", type=["png", "jpg", "jpeg"])
+            st.session_state['uploaded_csv'] = st.file_uploader("Recipients CSV File", type=["csv"])
             st.caption("CSV header schema: `name`, `email`, `course`, `date`")
 
-        elif nav_tool == "Elements":
-            st.subheader("Graphic Elements")
-            st.checkbox("Show Decorative Border", value=True)
-            st.checkbox("Show Divider Lines", value=True)
-            st.checkbox("Show Issuer Logo Badge", value=True)
-
         elif nav_tool == "Text":
-            st.subheader("Text Formatting")
-            st.session_state['t_show'] = st.checkbox("Show Title", value=st.session_state['t_show'])
-            st.session_state['t_text'] = st.text_input("Title Text", value=st.session_state['t_text'])
-            st.session_state['t_size'] = st.slider("Title Font Size", 10, 80, st.session_state['t_size'])
-            st.session_state['t_color'] = st.color_picker("Title Color", st.session_state['t_color'])
+            st.subheader("Text Elements")
+            with st.expander("Main Title", expanded=True):
+                st.session_state['t_show'] = st.checkbox("Show Title", value=st.session_state['t_show'])
+                st.session_state['t_text'] = st.text_input("Title Text", value=st.session_state['t_text'])
+                st.session_state['t_size'] = st.number_input("Font Size (px)", 10, 100, st.session_state['t_size'], key="ts_px")
+                st.session_state['t_color'] = st.color_picker("Title Color", st.session_state['t_color'])
 
-            st.divider()
-            st.session_state['iss_show'] = st.checkbox("Show Organization Name", value=st.session_state['iss_show'])
-            st.session_state['iss_text'] = st.text_input("Organization", value=st.session_state['iss_text'])
-            st.session_state['iss_size'] = st.slider("Organization Font Size", 10, 40, st.session_state['iss_size'])
-            st.session_state['iss_color'] = st.color_picker("Organization Color", st.session_state['iss_color'])
+            with st.expander("Organization / Issuer"):
+                st.session_state['iss_show'] = st.checkbox("Show Issuer", value=st.session_state['iss_show'])
+                st.session_state['iss_text'] = st.text_input("Issuer Name", value=st.session_state['iss_text'])
+                st.session_state['iss_size'] = st.number_input("Font Size (px)", 10, 60, st.session_state['iss_size'], key="is_px")
+                st.session_state['iss_color'] = st.color_picker("Issuer Color", st.session_state['iss_color'])
 
-            st.divider()
-            st.session_state['desc_show'] = st.checkbox("Show Description", value=st.session_state['desc_show'])
-            st.session_state['desc_text'] = st.text_area("Body Text", value=st.session_state['desc_text'])
-            st.session_state['desc_size'] = st.slider("Description Size", 10, 30, st.session_state['desc_size'])
-            st.session_state['desc_color'] = st.color_picker("Description Color", st.session_state['desc_color'])
+            with st.expander("Description Body"):
+                st.session_state['desc_show'] = st.checkbox("Show Description", value=st.session_state['desc_show'])
+                st.session_state['desc_text'] = st.text_area("Body Text", value=st.session_state['desc_text'])
+                st.session_state['desc_size'] = st.number_input("Font Size (px)", 10, 50, st.session_state['desc_size'], key="ds_px")
+                st.session_state['desc_color'] = st.color_picker("Body Color", st.session_state['desc_color'])
 
         elif nav_tool == "Attributes":
             st.subheader("Dynamic Attributes")
-            st.session_state['n_show'] = st.checkbox("Show Recipient Name", value=st.session_state['n_show'])
-            st.session_state['n_use_brackets'] = st.checkbox("Preview as [recipient.name]", value=st.session_state['n_use_brackets'])
-            st.session_state['n_size'] = st.slider("Name Size", 10, 90, st.session_state['n_size'])
-            st.session_state['n_color'] = st.color_picker("Name Color", st.session_state['n_color'])
+            with st.expander("Recipient Name", expanded=True):
+                st.session_state['n_show'] = st.checkbox("Show Name", value=st.session_state['n_show'])
+                st.session_state['n_use_brackets'] = st.checkbox("Preview as [recipient.name]", value=st.session_state['n_use_brackets'])
+                st.session_state['n_size'] = st.number_input("Font Size (px)", 10, 120, st.session_state['n_size'], key="ns_px")
+                st.session_state['n_color'] = st.color_picker("Name Color", st.session_state['n_color'])
 
-            st.divider()
-            st.session_state['c_show'] = st.checkbox("Show Course Attribute", value=st.session_state['c_show'])
-            st.session_state['c_prefix'] = st.text_input("Course Label Prefix", value=st.session_state['c_prefix'])
-            st.session_state['c_size'] = st.slider("Course Size", 10, 60, st.session_state['c_size'])
-            st.session_state['c_color'] = st.color_picker("Course Color", st.session_state['c_color'])
+            with st.expander("Course Title"):
+                st.session_state['c_show'] = st.checkbox("Show Course", value=st.session_state['c_show'])
+                st.session_state['c_prefix'] = st.text_input("Label Prefix", value=st.session_state['c_prefix'])
+                st.session_state['c_size'] = st.number_input("Font Size (px)", 10, 80, st.session_state['c_size'], key="cs_px")
+                st.session_state['c_color'] = st.color_picker("Course Color", st.session_state['c_color'])
 
-            st.divider()
-            st.session_state['d_show'] = st.checkbox("Show Date Attribute", value=st.session_state['d_show'])
-            st.session_state['d_prefix'] = st.text_input("Date Label Prefix", value=st.session_state['d_prefix'])
-            st.session_state['d_size'] = st.slider("Date Size", 10, 40, st.session_state['d_size'])
-            st.session_state['d_color'] = st.color_picker("Date Color", st.session_state['d_color'])
+            with st.expander("Training Date"):
+                st.session_state['d_show'] = st.checkbox("Show Date", value=st.session_state['d_show'])
+                st.session_state['d_prefix'] = st.text_input("Date Prefix", value=st.session_state['d_prefix'])
+                st.session_state['d_size'] = st.number_input("Font Size (px)", 10, 50, st.session_state['d_size'], key="dt_px")
+                st.session_state['d_color'] = st.color_picker("Date Color", st.session_state['d_color'])
 
-            st.divider()
-            st.session_state['id_show'] = st.checkbox("Show Credential ID Attribute", value=st.session_state['id_show'])
-            st.session_state['id_use_brackets'] = st.checkbox("Preview as [certificate.uuid]", value=st.session_state['id_use_brackets'])
-            st.session_state['id_prefix'] = st.text_input("ID Label Prefix", value=st.session_state['id_prefix'])
-            st.session_state['id_size'] = st.slider("ID Size", 10, 40, st.session_state['id_size'])
-            st.session_state['id_color'] = st.color_picker("ID Color", st.session_state['id_color'])
+            with st.expander("Credential ID (UUID)"):
+                st.session_state['id_show'] = st.checkbox("Show Credential ID", value=st.session_state['id_show'])
+                st.session_state['id_use_brackets'] = st.checkbox("Preview as [certificate.uuid]", value=st.session_state['id_use_brackets'])
+                st.session_state['id_prefix'] = st.text_input("ID Prefix", value=st.session_state['id_prefix'])
+                st.session_state['id_size'] = st.number_input("Font Size (px)", 10, 50, st.session_state['id_size'], key="ids_px")
+                st.session_state['id_color'] = st.color_picker("ID Color", st.session_state['id_color'])
 
-        elif nav_tool == "QR Codes":
+        elif nav_tool == "QR Code":
             st.subheader("Verification QR Code")
-            st.session_state['qr_show'] = st.checkbox("Embed Verification QR Code", value=st.session_state['qr_show'])
-            st.info("🔗 **Auto-Linked QR Code**: Points dynamically to the Digital Credential Verification portal for authenticating this certificate.")
-            st.session_state['qr_size'] = st.slider("QR Code Dimension Size", 50, 250, st.session_state['qr_size'])
+            st.session_state['qr_show'] = st.checkbox("Embed QR Code", value=st.session_state['qr_show'])
+            st.info("🔗 **Auto-Generated QR Link**: Encodes the dynamic `credential_id` verification portal URL directly onto each certificate.")
+            st.session_state['qr_size'] = st.number_input("QR Size (px)", 50, 300, st.session_state['qr_size'], key="qrs_px")
             st.session_state['qr_label'] = st.checkbox("Show 'Verification:' Label", value=st.session_state['qr_label'])
 
         elif nav_tool == "Layers":
-            st.subheader("Canvas Layering Coordinates")
-            st.session_state['t_x'], st.session_state['t_y'] = st.slider("Title X", 0, 1200, st.session_state['t_x']), st.slider("Title Y", 0, 850, st.session_state['t_y'])
-            st.session_state['n_x'], st.session_state['n_y'] = st.slider("Name X", 0, 1200, st.session_state['n_x']), st.slider("Name Y", 0, 850, st.session_state['n_y'])
-            st.session_state['c_x'], st.session_state['c_y'] = st.slider("Course X", 0, 1200, st.session_state['c_x']), st.slider("Course Y", 0, 850, st.session_state['c_y'])
-            st.session_state['desc_x'], st.session_state['desc_y'] = st.slider("Description X", 0, 1200, st.session_state['desc_x']), st.slider("Description Y", 0, 850, st.session_state['desc_y'])
-            st.session_state['d_x'], st.session_state['d_y'] = st.slider("Date X", 0, 1200, st.session_state['d_x']), st.slider("Date Y", 0, 850, st.session_state['d_y'])
-            st.session_state['id_x'], st.session_state['id_y'] = st.slider("ID X", 0, 1200, st.session_state['id_x']), st.slider("ID Y", 0, 850, st.session_state['id_y'])
-            st.session_state['qr_x'], st.session_state['qr_y'] = st.slider("QR Code X", 0, 1200, st.session_state['qr_x']), st.slider("QR Code Y", 0, 850, st.session_state['qr_y'])
+            st.subheader("Canvas Coordinates")
+            st.caption("Adjust X and Y positions on 1200 x 850 canvas")
+            st.session_state['t_x'], st.session_state['t_y'] = st.slider("Title (X, Y)", 0, 1200, st.session_state['t_x']), st.slider("Title Y", 0, 850, st.session_state['t_y'])
+            st.session_state['n_x'], st.session_state['n_y'] = st.slider("Name (X, Y)", 0, 1200, st.session_state['n_x']), st.slider("Name Y", 0, 850, st.session_state['n_y'])
+            st.session_state['c_x'], st.session_state['c_y'] = st.slider("Course (X, Y)", 0, 1200, st.session_state['c_x']), st.slider("Course Y", 0, 850, st.session_state['c_y'])
+            st.session_state['desc_x'], st.session_state['desc_y'] = st.slider("Description (X, Y)", 0, 1200, st.session_state['desc_x']), st.slider("Description Y", 0, 850, st.session_state['desc_y'])
+            st.session_state['d_x'], st.session_state['d_y'] = st.slider("Date (X, Y)", 0, 1200, st.session_state['d_x']), st.slider("Date Y", 0, 850, st.session_state['d_y'])
+            st.session_state['id_x'], st.session_state['id_y'] = st.slider("ID (X, Y)", 0, 1200, st.session_state['id_x']), st.slider("ID Y", 0, 850, st.session_state['id_y'])
+            st.session_state['qr_x'], st.session_state['qr_y'] = st.slider("QR Code (X, Y)", 0, 1200, st.session_state['qr_x']), st.slider("QR Code Y", 0, 850, st.session_state['qr_y'])
 
-    # Build config dynamically from session state
+    # Build config dynamically
     elem_cfg = {
         'title': {'show': st.session_state['t_show'], 'text': st.session_state['t_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'], 'size': st.session_state['t_size'], 'color': st.session_state['t_color']},
         'issuer': {'show': st.session_state['iss_show'], 'text': st.session_state['iss_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'] + 55, 'size': st.session_state['iss_size'], 'color': st.session_state['iss_color']},
@@ -442,7 +422,7 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("Studio Canvas Studio")
+        st.subheader("Studio Canvas Preview")
         
         if st.session_state['uploaded_bg']:
             base_img = Image.open(st.session_state['uploaded_bg'])
@@ -450,7 +430,7 @@ with tabs[0]:
             base_img = create_default_template(st.session_state['template_style'])
 
         sample_uuid = "916bc487-09cc-4659-9794-a7072dd65ec7"
-        sample_v_url = f"{st.session_state['app_host_url']}/?id={sample_uuid}"
+        sample_v_url = f"?id={sample_uuid}"
 
         preview_canvas = render_dynamic_certificate(
             base_img,
@@ -461,52 +441,50 @@ with tabs[0]:
             sample_v_url,
             elem_cfg
         )
-        st.image(preview_canvas, caption=f"Canvas Live Preview - QR Target: {sample_v_url}", use_container_width=True)
+        st.image(preview_canvas, caption="Studio Live Canvas", use_container_width=True)
 
         st.divider()
-        col_btn1, col_btn2 = st.columns([2, 1])
-        with col_btn1:
-            if st.button("🚀 Process Batch & Generate Certificates", type="primary", use_container_width=True):
-                if not st.session_state['uploaded_csv']:
-                    st.warning("Please upload a CSV in the Uploads tab to process batch certificates.")
-                else:
-                    df_recipients = pd.read_csv(st.session_state['uploaded_csv'])
-                    zip_buffer = io.BytesIO()
-                    conn = sqlite3.connect(DB_FILE)
-                    cursor = conn.cursor()
-                    
-                    count = 0
-                    elem_cfg_final = elem_cfg.copy()
-                    elem_cfg_final['name']['placeholders'] = False
-                    elem_cfg_final['id']['placeholders'] = False
+        if st.button("🚀 Process Batch & Generate Certificates", type="primary", use_container_width=True):
+            if not st.session_state['uploaded_csv']:
+                st.warning("Please upload a CSV in the Uploads tab to process batch certificates.")
+            else:
+                df_recipients = pd.read_csv(st.session_state['uploaded_csv'])
+                zip_buffer = io.BytesIO()
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                
+                count = 0
+                elem_cfg_final = elem_cfg.copy()
+                elem_cfg_final['name']['placeholders'] = False
+                elem_cfg_final['id']['placeholders'] = False
 
-                    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-                        for idx, row in df_recipients.iterrows():
-                            cred_id = str(uuid.uuid4())
-                            v_url = f"{st.session_state['app_host_url']}/?id={cred_id}"
-                            
-                            cert_out = render_dynamic_certificate(
-                                base_img, row['name'], row['course'], str(row['date']), cred_id, v_url, elem_cfg_final
-                            )
-                            
-                            img_byte_arr = io.BytesIO()
-                            cert_out.save(img_byte_arr, format='PNG')
-                            zip_file.writestr(f"{row['name'].replace(' ', '_')}_{cred_id[:8]}.png", img_byte_arr.getvalue())
-                            
-                            cursor.execute("""
-                                INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date)
-                                VALUES (?, ?, ?, ?, ?)
-                            """, (cred_id, row['name'], row['email'], row['course'], str(row['date'])))
-                            count += 1
-                            
-                    conn.commit()
-                    conn.close()
-                    
-                    st.success(f"🎉 Successfully generated {count} custom credentials!")
-                    st.download_button("📦 Download Certificates ZIP Archive", data=zip_buffer.getvalue(), file_name="certificates.zip", mime="application/zip")
+                with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                    for idx, row in df_recipients.iterrows():
+                        cred_id = str(uuid.uuid4())
+                        v_url = f"?id={cred_id}"
+                        
+                        cert_out = render_dynamic_certificate(
+                            base_img, row['name'], row['course'], str(row['date']), cred_id, v_url, elem_cfg_final
+                        )
+                        
+                        img_byte_arr = io.BytesIO()
+                        cert_out.save(img_byte_arr, format='PNG')
+                        zip_file.writestr(f"{row['name'].replace(' ', '_')}_{cred_id[:8]}.png", img_byte_arr.getvalue())
+                        
+                        cursor.execute("""
+                            INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (cred_id, row['name'], row['email'], row['course'], str(row['date'])))
+                        count += 1
+                        
+                conn.commit()
+                conn.close()
+                
+                st.success(f"🎉 Successfully generated {count} custom credentials!")
+                st.download_button("📦 Download Certificates ZIP Archive", data=zip_buffer.getvalue(), file_name="certificates.zip", mime="application/zip")
 
 # ------------------------------------------
-# TAB 2: EMAIL DISTRIBUTION ENGINE (GMAIL SMTP)
+# TAB 2: EMAIL DISTRIBUTION ENGINE
 # ------------------------------------------
 with tabs[1]:
     st.header("Email Distribution Engine")
@@ -517,7 +495,6 @@ with tabs[1]:
     with col_smtp:
         st.subheader("✉️ Sender Configuration")
         
-        # Load sender email from st.secrets if available, else default to text input
         default_sender = st.secrets.get("GMAIL_ADDRESS", "your.email@gmail.com") if hasattr(st, "secrets") else "your.email@gmail.com"
         sender_email = st.text_input("Sender Email Address", value=default_sender)
         
@@ -545,7 +522,6 @@ Mental Health First Aid Organization"""
 
     st.divider()
     if st.button("📨 Dispatch Batch Emails", type="primary"):
-        # Retrieve password from Streamlit Secrets or Environment Variables
         app_password = None
         if hasattr(st, "secrets") and "GMAIL_APP_PASSWORD" in st.secrets:
             app_password = st.secrets["GMAIL_APP_PASSWORD"]
@@ -569,7 +545,7 @@ Mental Health First Aid Organization"""
                 server.login(sender_email, app_password)
 
                 for idx, row in df_pending.iterrows():
-                    v_url = f"{st.session_state['app_host_url']}/?id={row['credential_id']}"
+                    v_url = f"?id={row['credential_id']}"
                     custom_body = email_body.replace("{{recipient_name}}", row['recipient_name'])\
                                             .replace("{{course_name}}", row['course_name'])\
                                             .replace("{{credential_id}}", row['credential_id'])\
@@ -594,7 +570,7 @@ Mental Health First Aid Organization"""
 # TAB 3: VIRAL ANALYTICS
 # ------------------------------------------
 with tabs[2]:
-    st.header("Growth & Viral Analytics Dashboard")
+    st.header("Growth & Analytics Dashboard")
     conn = sqlite3.connect(DB_FILE)
     df_events = pd.read_sql_query("SELECT * FROM analytics_events", conn)
     df_creds = pd.read_sql_query("SELECT * FROM credentials", conn)
