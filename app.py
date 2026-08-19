@@ -187,7 +187,6 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
         qr_img = qr_img.resize((elem_cfg['qr']['size'], elem_cfg['qr']['size']))
         img.paste(qr_img, (elem_cfg['qr']['x'], elem_cfg['qr']['y']))
         
-        # QR Code Verification Text Label above/below QR
         if elem_cfg['qr']['label']:
             font_qr = get_font(12)
             draw.text((elem_cfg['qr']['x'], elem_cfg['qr']['y'] - 16), "Verification:", fill="#475569", font=font_qr)
@@ -212,7 +211,6 @@ target_id = query_params.get("id", None)
 utm_source = query_params.get("utm_source", "")
 utm_medium = query_params.get("utm_medium", "")
 
-# Get current base URL dynamically for accurate QR Links
 if "app_host_url" not in st.session_state:
     st.session_state["app_host_url"] = "https://credsverse.streamlit.app"
 
@@ -298,7 +296,7 @@ if target_id:
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("🎓 Credsverse Digital Credential Engine")
+st.title("🎓 Digital Credential Engine")
 
 tabs = st.tabs([
     "🎨 1. Graphic Designer & Template Engine",
@@ -311,6 +309,23 @@ tabs = st.tabs([
 # TAB 1: CANVA-LIKE GRAPHIC DESIGNER
 # ------------------------------------------
 with tabs[0]:
+    # Persistent State Initialization
+    defaults = {
+        't_show': True, 't_text': 'Certificate of Participation', 't_size': 42, 't_color': '#1E3A8A', 't_x': 200, 't_y': 100,
+        'iss_show': True, 'iss_text': 'Mental Health First Aid Organization', 'iss_size': 20, 'iss_color': '#3B82F6',
+        'desc_show': True, 'desc_text': 'Participants learn skills for providing initial help to individuals experiencing mental health challenges.', 'desc_size': 15, 'desc_color': '#475569', 'desc_x': 200, 'desc_y': 450,
+        'n_show': True, 'n_use_brackets': True, 'n_size': 48, 'n_color': '#0F172A', 'n_x': 200, 'n_y': 280,
+        'c_show': True, 'c_prefix': 'has completed', 'c_size': 26, 'c_color': '#1E293B', 'c_x': 200, 'c_y': 380,
+        'd_show': True, 'd_prefix': 'Training Date:', 'd_size': 16, 'd_color': '#334155', 'd_x': 80, 'd_y': 700,
+        'id_show': True, 'id_use_brackets': True, 'id_prefix': 'Issue Date / ID:', 'id_size': 16, 'id_color': '#334155', 'id_x': 380, 'id_y': 700,
+        'qr_show': True, 'qr_size': 130, 'qr_label': True, 'qr_x': 980, 'qr_y': 650,
+        'template_style': 'Classic Blue', 'uploaded_bg': None, 'uploaded_csv': None
+    }
+    
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
     # Top Bar Controls
     top_bar_col1, top_bar_col2, top_bar_col3 = st.columns([3, 2, 1.5])
     with top_bar_col1:
@@ -324,7 +339,6 @@ with tabs[0]:
 
     st.divider()
 
-    # Canva Layout Structure: Left Toolbar Navigation vs Right Studio Canvas
     col_nav_bar, col_sidebar_menu, col_studio = st.columns([0.6, 2.2, 5.2])
 
     with col_nav_bar:
@@ -339,12 +353,12 @@ with tabs[0]:
         if nav_tool == "Templates":
             st.subheader("All Templates")
             st.markdown("##### Certificates")
-            template_style = st.selectbox("Preset Template Base", ["Classic Blue", "Elegant Gold", "Modern Dark"])
+            st.session_state['template_style'] = st.selectbox("Preset Template Base", ["Classic Blue", "Elegant Gold", "Modern Dark"])
 
         elif nav_tool == "Uploads":
             st.subheader("Upload Assets")
-            uploaded_bg = st.file_uploader("Add Background Image", type=["png", "jpg", "jpeg"])
-            uploaded_csv = st.file_uploader("Upload Batch Recipients CSV", type=["csv"])
+            st.session_state['uploaded_bg'] = st.file_uploader("Add Background Image", type=["png", "jpg", "jpeg"])
+            st.session_state['uploaded_csv'] = st.file_uploader("Upload Batch Recipients CSV", type=["csv"])
             st.caption("CSV header schema: `name`, `email`, `course`, `date`")
 
         elif nav_tool == "Elements":
@@ -355,106 +369,85 @@ with tabs[0]:
 
         elif nav_tool == "Text":
             st.subheader("Text Formatting")
-            t_show = st.checkbox("Show Title", value=True)
-            t_text = st.text_input("Title Text", value="Certificate of Participation")
-            t_size = st.slider("Title Font Size", 10, 80, 42)
-            t_color = st.color_picker("Title Color", "#1E3A8A")
+            st.session_state['t_show'] = st.checkbox("Show Title", value=st.session_state['t_show'])
+            st.session_state['t_text'] = st.text_input("Title Text", value=st.session_state['t_text'])
+            st.session_state['t_size'] = st.slider("Title Font Size", 10, 80, st.session_state['t_size'])
+            st.session_state['t_color'] = st.color_picker("Title Color", st.session_state['t_color'])
 
             st.divider()
-            iss_show = st.checkbox("Show Organization Name", value=True)
-            iss_text = st.text_input("Organization", value="Mental Health First Aid Organization")
-            iss_size = st.slider("Organization Font Size", 10, 40, 20)
-            iss_color = st.color_picker("Organization Color", "#3B82F6")
+            st.session_state['iss_show'] = st.checkbox("Show Organization Name", value=st.session_state['iss_show'])
+            st.session_state['iss_text'] = st.text_input("Organization", value=st.session_state['iss_text'])
+            st.session_state['iss_size'] = st.slider("Organization Font Size", 10, 40, st.session_state['iss_size'])
+            st.session_state['iss_color'] = st.color_picker("Organization Color", st.session_state['iss_color'])
 
             st.divider()
-            desc_show = st.checkbox("Show Description", value=True)
-            desc_text = st.text_area("Body Text", value="Participants learn skills for providing initial help to individuals experiencing mental health challenges.")
-            desc_size = st.slider("Description Size", 10, 30, 15)
-            desc_color = st.color_picker("Description Color", "#475569")
+            st.session_state['desc_show'] = st.checkbox("Show Description", value=st.session_state['desc_show'])
+            st.session_state['desc_text'] = st.text_area("Body Text", value=st.session_state['desc_text'])
+            st.session_state['desc_size'] = st.slider("Description Size", 10, 30, st.session_state['desc_size'])
+            st.session_state['desc_color'] = st.color_picker("Description Color", st.session_state['desc_color'])
 
         elif nav_tool == "Attributes":
             st.subheader("Dynamic Attributes")
-            n_show = st.checkbox("Show Recipient Name", value=True)
-            n_use_brackets = st.checkbox("Preview as [recipient.name]", value=True)
-            n_size = st.slider("Name Size", 10, 90, 48)
-            n_color = st.color_picker("Name Color", "#0F172A")
+            st.session_state['n_show'] = st.checkbox("Show Recipient Name", value=st.session_state['n_show'])
+            st.session_state['n_use_brackets'] = st.checkbox("Preview as [recipient.name]", value=st.session_state['n_use_brackets'])
+            st.session_state['n_size'] = st.slider("Name Size", 10, 90, st.session_state['n_size'])
+            st.session_state['n_color'] = st.color_picker("Name Color", st.session_state['n_color'])
 
             st.divider()
-            c_show = st.checkbox("Show Course Attribute", value=True)
-            c_prefix = st.text_input("Course Label Prefix", value="has completed")
-            c_size = st.slider("Course Size", 10, 60, 26)
-            c_color = st.color_picker("Course Color", "#1E293B")
+            st.session_state['c_show'] = st.checkbox("Show Course Attribute", value=st.session_state['c_show'])
+            st.session_state['c_prefix'] = st.text_input("Course Label Prefix", value=st.session_state['c_prefix'])
+            st.session_state['c_size'] = st.slider("Course Size", 10, 60, st.session_state['c_size'])
+            st.session_state['c_color'] = st.color_picker("Course Color", st.session_state['c_color'])
 
             st.divider()
-            d_show = st.checkbox("Show Date Attribute", value=True)
-            d_prefix = st.text_input("Date Label Prefix", value="Training Date:")
-            d_size = st.slider("Date Size", 10, 40, 16)
-            d_color = st.color_picker("Date Color", "#334155")
+            st.session_state['d_show'] = st.checkbox("Show Date Attribute", value=st.session_state['d_show'])
+            st.session_state['d_prefix'] = st.text_input("Date Label Prefix", value=st.session_state['d_prefix'])
+            st.session_state['d_size'] = st.slider("Date Size", 10, 40, st.session_state['d_size'])
+            st.session_state['d_color'] = st.color_picker("Date Color", st.session_state['d_color'])
 
             st.divider()
-            id_show = st.checkbox("Show Credential ID Attribute", value=True)
-            id_use_brackets = st.checkbox("Preview as [certificate.uuid]", value=True)
-            id_prefix = st.text_input("ID Label Prefix", value="Issue Date / ID:")
-            id_size = st.slider("ID Size", 10, 40, 16)
-            id_color = st.color_picker("ID Color", "#334155")
+            st.session_state['id_show'] = st.checkbox("Show Credential ID Attribute", value=st.session_state['id_show'])
+            st.session_state['id_use_brackets'] = st.checkbox("Preview as [certificate.uuid]", value=st.session_state['id_use_brackets'])
+            st.session_state['id_prefix'] = st.text_input("ID Label Prefix", value=st.session_state['id_prefix'])
+            st.session_state['id_size'] = st.slider("ID Size", 10, 40, st.session_state['id_size'])
+            st.session_state['id_color'] = st.color_picker("ID Color", st.session_state['id_color'])
 
         elif nav_tool == "QR Codes":
             st.subheader("Verification QR Code")
-            qr_show = st.checkbox("Embed Verification QR Code", value=True)
+            st.session_state['qr_show'] = st.checkbox("Embed Verification QR Code", value=st.session_state['qr_show'])
             st.info("🔗 **Auto-Linked QR Code**: Points dynamically to the Digital Credential Verification portal for authenticating this certificate.")
-            qr_size = st.slider("QR Code Dimension Size", 50, 250, 130)
-            qr_label = st.checkbox("Show 'Verification:' Label", value=True)
+            st.session_state['qr_size'] = st.slider("QR Code Dimension Size", 50, 250, st.session_state['qr_size'])
+            st.session_state['qr_label'] = st.checkbox("Show 'Verification:' Label", value=st.session_state['qr_label'])
 
         elif nav_tool == "Layers":
             st.subheader("Canvas Layering Coordinates")
-            t_x, t_y = st.slider("Title X", 0, 1200, 200), st.slider("Title Y", 0, 850, 100)
-            n_x, n_y = st.slider("Name X", 0, 1200, 200), st.slider("Name Y", 0, 850, 280)
-            c_x, c_y = st.slider("Course X", 0, 1200, 200), st.slider("Course Y", 0, 850, 380)
-            desc_x, desc_y = st.slider("Description X", 0, 1200, 200), st.slider("Description Y", 0, 850, 450)
-            d_x, d_y = st.slider("Date X", 0, 1200, 80), st.slider("Date Y", 0, 850, 700)
-            id_x, id_y = st.slider("ID X", 0, 1200, 380), st.slider("ID Y", 0, 850, 700)
-            qr_x, qr_y = st.slider("QR Code X", 0, 1200, 980), st.slider("QR Code Y", 0, 850, 650)
+            st.session_state['t_x'], st.session_state['t_y'] = st.slider("Title X", 0, 1200, st.session_state['t_x']), st.slider("Title Y", 0, 850, st.session_state['t_y'])
+            st.session_state['n_x'], st.session_state['n_y'] = st.slider("Name X", 0, 1200, st.session_state['n_x']), st.slider("Name Y", 0, 850, st.session_state['n_y'])
+            st.session_state['c_x'], st.session_state['c_y'] = st.slider("Course X", 0, 1200, st.session_state['c_x']), st.slider("Course Y", 0, 850, st.session_state['c_y'])
+            st.session_state['desc_x'], st.session_state['desc_y'] = st.slider("Description X", 0, 1200, st.session_state['desc_x']), st.slider("Description Y", 0, 850, st.session_state['desc_y'])
+            st.session_state['d_x'], st.session_state['d_y'] = st.slider("Date X", 0, 1200, st.session_state['d_x']), st.slider("Date Y", 0, 850, st.session_state['d_y'])
+            st.session_state['id_x'], st.session_state['id_y'] = st.slider("ID X", 0, 1200, st.session_state['id_x']), st.slider("ID Y", 0, 850, st.session_state['id_y'])
+            st.session_state['qr_x'], st.session_state['qr_y'] = st.slider("QR Code X", 0, 1200, st.session_state['qr_x']), st.slider("QR Code Y", 0, 850, st.session_state['qr_y'])
 
-    # Defaults for variables if not accessed in Layers tab
-    if 't_x' not in locals(): t_x, t_y = 200, 100
-    if 'n_x' not in locals(): n_x, n_y = 200, 280
-    if 'c_x' not in locals(): c_x, c_y = 200, 380
-    if 'desc_x' not in locals(): desc_x, desc_y = 200, 450
-    if 'd_x' not in locals(): d_x, d_y = 80, 700
-    if 'id_x' not in locals(): id_x, id_y = 380, 700
-    if 'qr_x' not in locals(): qr_x, qr_y = 980, 650
-
-    if 't_show' not in locals():
-        t_show, t_text, t_size, t_color = True, "Certificate of Participation", 42, "#1E3A8A"
-        iss_show, iss_text, iss_size, iss_color = True, "Mental Health First Aid Organization", 20, "#3B82F6"
-        desc_show, desc_text, desc_size, desc_color = True, "Participants learn skills for providing initial help to individuals experiencing mental health challenges.", 15, "#475569"
-        n_show, n_use_brackets, n_size, n_color = True, True, 48, "#0F172A"
-        c_show, c_prefix, c_size, c_color = True, "has completed", 26, "#1E293B"
-        d_show, d_prefix, d_size, d_color = True, "Training Date:", 16, "#334155"
-        id_show, id_use_brackets, id_prefix, id_size, id_color = True, True, "Issue Date / ID:", 16, "#334155"
-        qr_show, qr_size, qr_label = True, 130, True
-        uploaded_bg = None
-        uploaded_csv = None
-        template_style = "Classic Blue"
-
+    # Build config dynamically from session state
     elem_cfg = {
-        'title': {'show': t_show, 'text': t_text, 'x': t_x, 'y': t_y, 'size': t_size, 'color': t_color},
-        'issuer': {'show': iss_show, 'text': iss_text, 'x': t_x, 'y': t_y + 55, 'size': iss_size, 'color': iss_color},
-        'name': {'show': n_show, 'x': n_x, 'y': n_y, 'size': n_size, 'color': n_color, 'placeholders': n_use_brackets},
-        'course': {'show': c_show, 'prefix': c_prefix, 'x': c_x, 'y': c_y, 'size': c_size, 'color': c_color},
-        'desc': {'show': desc_show, 'text': desc_text, 'x': desc_x, 'y': desc_y, 'size': desc_size, 'color': desc_color},
-        'date': {'show': d_show, 'prefix': d_prefix, 'x': d_x, 'y': d_y, 'size': d_size, 'color': d_color},
-        'id': {'show': id_show, 'prefix': id_prefix, 'x': id_x, 'y': id_y, 'size': id_size, 'color': id_color, 'placeholders': id_use_brackets},
-        'qr': {'show': qr_show, 'x': qr_x, 'y': qr_y, 'size': qr_size, 'label': qr_label}
+        'title': {'show': st.session_state['t_show'], 'text': st.session_state['t_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'], 'size': st.session_state['t_size'], 'color': st.session_state['t_color']},
+        'issuer': {'show': st.session_state['iss_show'], 'text': st.session_state['iss_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'] + 55, 'size': st.session_state['iss_size'], 'color': st.session_state['iss_color']},
+        'name': {'show': st.session_state['n_show'], 'x': st.session_state['n_x'], 'y': st.session_state['n_y'], 'size': st.session_state['n_size'], 'color': st.session_state['n_color'], 'placeholders': st.session_state['n_use_brackets']},
+        'course': {'show': st.session_state['c_show'], 'prefix': st.session_state['c_prefix'], 'x': st.session_state['c_x'], 'y': st.session_state['c_y'], 'size': st.session_state['c_size'], 'color': st.session_state['c_color']},
+        'desc': {'show': st.session_state['desc_show'], 'text': st.session_state['desc_text'], 'x': st.session_state['desc_x'], 'y': st.session_state['desc_y'], 'size': st.session_state['desc_size'], 'color': st.session_state['desc_color']},
+        'date': {'show': st.session_state['d_show'], 'prefix': st.session_state['d_prefix'], 'x': st.session_state['d_x'], 'y': st.session_state['d_y'], 'size': st.session_state['d_size'], 'color': st.session_state['d_color']},
+        'id': {'show': st.session_state['id_show'], 'prefix': st.session_state['id_prefix'], 'x': st.session_state['id_x'], 'y': st.session_state['id_y'], 'size': st.session_state['id_size'], 'color': st.session_state['id_color'], 'placeholders': st.session_state['id_use_brackets']},
+        'qr': {'show': st.session_state['qr_show'], 'x': st.session_state['qr_x'], 'y': st.session_state['qr_y'], 'size': st.session_state['qr_size'], 'label': st.session_state['qr_label']}
     }
 
     with col_studio:
         st.subheader("Studio Canvas Studio")
         
-        if uploaded_bg:
-            base_img = Image.open(uploaded_bg)
+        if st.session_state['uploaded_bg']:
+            base_img = Image.open(st.session_state['uploaded_bg'])
         else:
-            base_img = create_default_template(template_style)
+            base_img = create_default_template(st.session_state['template_style'])
 
         sample_uuid = "916bc487-09cc-4659-9794-a7072dd65ec7"
         sample_v_url = f"{st.session_state['app_host_url']}/?id={sample_uuid}"
@@ -474,10 +467,10 @@ with tabs[0]:
         col_btn1, col_btn2 = st.columns([2, 1])
         with col_btn1:
             if st.button("🚀 Process Batch & Generate Certificates", type="primary", use_container_width=True):
-                if not uploaded_csv:
+                if not st.session_state['uploaded_csv']:
                     st.warning("Please upload a CSV in the Uploads tab to process batch certificates.")
                 else:
-                    df_recipients = pd.read_csv(uploaded_csv)
+                    df_recipients = pd.read_csv(st.session_state['uploaded_csv'])
                     zip_buffer = io.BytesIO()
                     conn = sqlite3.connect(DB_FILE)
                     cursor = conn.cursor()
@@ -561,7 +554,6 @@ Mental Health First Aid Organization"""
             progress_bar = st.progress(0)
 
             try:
-                # Setup Gmail SSL Connection
                 server = smtplib.SMTP_SSL("smtp.gmail.com", gmail_port)
                 server.login(sender_email, app_password)
 
