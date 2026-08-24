@@ -1,7 +1,7 @@
 """
 Digital Credential Issuance, Verification & Analytics Platform
 Built with Streamlit, Pillow, SQLite, and Plotly
-Streamlined Studio UI with Dynamic Verification QR Codes
+Full Canva-style Studio Engine with Pixel-accurate Font Sizing
 """
 
 import streamlit as st
@@ -78,8 +78,8 @@ def seed_dummy_data():
     
     if count == 0:
         dummy_creds = [
-            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@techvalley.pk", "Digital Marketing", "2026-08-19", "VALID"),
-            ("812ab341-12cd-4123-8821-b6072dd54fa1", "Ali Khan", "ali@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
+            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "Mental Health First Aid Standard", "2026-08-19", "VALID"),
+            ("812ab341-12cd-4123-8821-b6072dd54fa1", "Alex Chen", "alex@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
         ]
         cursor.executemany("""
             INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date, status)
@@ -100,7 +100,7 @@ def seed_dummy_data():
     conn.close()
 
 # ==========================================
-# 2. HELPER UTILITIES & DRAWING ENGINE
+# 2. DRAWING & FONT SCALING ENGINE
 # ==========================================
 def generate_qr_code(verification_url):
     qr = qrcode.QRCode(
@@ -133,7 +133,7 @@ def create_default_template(style="Classic Blue"):
 
 def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, elem_cfg):
     """
-    Renders certificate elements onto base image canvas using exact px sizes and coordinates.
+    Renders certificate elements onto canvas with accurate pixel font scaling.
     """
     img = base_img.copy().convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -142,54 +142,58 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
         try:
             return ImageFont.truetype("arial.ttf", size_px)
         except IOError:
-            return ImageFont.load_default()
+            try:
+                # Pillow >=10.1.0 font scaling support
+                return ImageFont.load_default(size=size_px)
+            except TypeError:
+                return ImageFont.load_default()
 
-    # Title / Header
+    # 1. Header / Title
     if elem_cfg['title']['show']:
         font = get_font(elem_cfg['title']['size'])
         draw.text((elem_cfg['title']['x'], elem_cfg['title']['y']), elem_cfg['title']['text'], fill=elem_cfg['title']['color'], font=font)
 
-    # Issuer / Organization Name
+    # 2. Issuer / Organization Name
     if elem_cfg['issuer']['show']:
         font = get_font(elem_cfg['issuer']['size'])
         draw.text((elem_cfg['issuer']['x'], elem_cfg['issuer']['y']), elem_cfg['issuer']['text'], fill=elem_cfg['issuer']['color'], font=font)
 
-    # Recipient Name Tag
+    # 3. Recipient Name Tag
     if elem_cfg['name']['show']:
         font = get_font(elem_cfg['name']['size'])
         display_name = f"[{r_name}]" if elem_cfg['name']['placeholders'] else r_name
         draw.text((elem_cfg['name']['x'], elem_cfg['name']['y']), display_name, fill=elem_cfg['name']['color'], font=font)
 
-    # Course / Program Tag
+    # 4. Course Tag
     if elem_cfg['course']['show']:
         font = get_font(elem_cfg['course']['size'])
         draw.text((elem_cfg['course']['x'], elem_cfg['course']['y']), f"{elem_cfg['course']['prefix']} {c_name}", fill=elem_cfg['course']['color'], font=font)
 
-    # Description
+    # 5. Description Body
     if elem_cfg['desc']['show']:
         font = get_font(elem_cfg['desc']['size'])
         draw.text((elem_cfg['desc']['x'], elem_cfg['desc']['y']), elem_cfg['desc']['text'], fill=elem_cfg['desc']['color'], font=font)
 
-    # Issue Date
+    # 6. Issue Date
     if elem_cfg['date']['show']:
         font = get_font(elem_cfg['date']['size'])
         draw.text((elem_cfg['date']['x'], elem_cfg['date']['y']), f"{elem_cfg['date']['prefix']} {i_date}", fill=elem_cfg['date']['color'], font=font)
 
-    # Credential ID / UUID
+    # 7. Credential ID
     if elem_cfg['id']['show']:
         font = get_font(elem_cfg['id']['size'])
         display_id = f"[certificate.uuid]" if elem_cfg['id']['placeholders'] else c_id
         draw.text((elem_cfg['id']['x'], elem_cfg['id']['y']), f"{elem_cfg['id']['prefix']} {display_id}", fill=elem_cfg['id']['color'], font=font)
 
-    # Verification QR Code
+    # 8. Verification QR Code
     if elem_cfg['qr']['show']:
         qr_img = generate_qr_code(v_url)
         qr_img = qr_img.resize((elem_cfg['qr']['size'], elem_cfg['qr']['size']))
         img.paste(qr_img, (elem_cfg['qr']['x'], elem_cfg['qr']['y']))
         
         if elem_cfg['qr']['label']:
-            font_qr = get_font(12)
-            draw.text((elem_cfg['qr']['x'], elem_cfg['qr']['y'] - 16), "Verification:", fill="#475569", font=font_qr)
+            font_qr = get_font(max(12, int(elem_cfg['qr']['size'] * 0.1)))
+            draw.text((elem_cfg['qr']['x'], elem_cfg['qr']['y'] - 18), "Verification:", fill="#475569", font=font_qr)
 
     return img
 
@@ -223,7 +227,7 @@ if target_id:
     record = cursor.fetchone()
     conn.close()
 
-    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>🎓 Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
     
     if not record:
         st.error(f"❌ Invalid Credential ID: `{target_id}`. Verification failed.")
@@ -235,11 +239,11 @@ if target_id:
         col_cert, col_meta = st.columns([1.6, 1])
         
         base_template = create_default_template("Classic Blue")
-        v_url = f"?id={c_id}"
+        v_url = f"https://certificate-tv.streamlit.app/?id={c_id}"
         
         default_cfg = {
             'title': {'show': True, 'text': 'Certificate of Participation', 'x': 250, 'y': 100, 'size': 44, 'color': '#1E3A8A'},
-            'issuer': {'show': True, 'text': 'Gemini Notebook', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
+            'issuer': {'show': True, 'text': 'Mental Health First Aid Organization', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
             'name': {'show': True, 'x': 250, 'y': 280, 'size': 48, 'color': '#1E293B', 'placeholders': False},
             'course': {'show': True, 'prefix': 'has completed', 'x': 250, 'y': 380, 'size': 28, 'color': '#0F172A'},
             'desc': {'show': True, 'text': 'Participants learn skills for providing support to individuals in need.', 'x': 250, 'y': 440, 'size': 16, 'color': '#64748B'},
@@ -293,20 +297,19 @@ if target_id:
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("Digital Credential Management Platform")
+st.title("🎓 Digital Credential Management Platform")
 
 tabs = st.tabs([
-    "1. Graphic Designer & Template Engine",
-    "2. Email Distribution Engine",
-    "3. Analytics Dashboard",
-    "4. Credentials Registry"
+    "🎨 1. Graphic Designer & Template Engine",
+    "📧 2. Email Distribution Engine",
+    "📈 3. Analytics Dashboard",
+    "🔍 4. Credentials Registry"
 ])
 
 # ------------------------------------------
 # TAB 1: GRAPHIC DESIGNER & TEMPLATE ENGINE
 # ------------------------------------------
 with tabs[0]:
-    # Persistent State Initialization
     defaults = {
         't_show': True, 't_text': 'Certificate of Participation', 't_size': 42, 't_color': '#1E3A8A', 't_x': 200, 't_y': 100,
         'iss_show': True, 'iss_text': 'Mental Health First Aid Organization', 'iss_size': 20, 'iss_color': '#3B82F6',
@@ -345,23 +348,23 @@ with tabs[0]:
             st.caption("CSV header schema: `name`, `email`, `course`, `date`")
 
         elif nav_tool == "Text":
-            st.subheader("Text Formatting")
+            st.subheader("Text Elements")
             with st.expander("Main Title", expanded=True):
                 st.session_state['t_show'] = st.checkbox("Show Title", value=st.session_state['t_show'])
                 st.session_state['t_text'] = st.text_input("Title Text", value=st.session_state['t_text'])
-                st.session_state['t_size'] = st.number_input("Font Size (px)", 10, 100, st.session_state['t_size'], key="ts_px")
+                st.session_state['t_size'] = st.number_input("Font Size (px)", 10, 150, st.session_state['t_size'], step=2, key="ts_px")
                 st.session_state['t_color'] = st.color_picker("Title Color", st.session_state['t_color'])
 
             with st.expander("Organization / Issuer"):
                 st.session_state['iss_show'] = st.checkbox("Show Issuer", value=st.session_state['iss_show'])
                 st.session_state['iss_text'] = st.text_input("Issuer Name", value=st.session_state['iss_text'])
-                st.session_state['iss_size'] = st.number_input("Font Size (px)", 10, 60, st.session_state['iss_size'], key="is_px")
+                st.session_state['iss_size'] = st.number_input("Font Size (px)", 10, 100, st.session_state['iss_size'], step=2, key="is_px")
                 st.session_state['iss_color'] = st.color_picker("Issuer Color", st.session_state['iss_color'])
 
             with st.expander("Description Body"):
                 st.session_state['desc_show'] = st.checkbox("Show Description", value=st.session_state['desc_show'])
                 st.session_state['desc_text'] = st.text_area("Body Text", value=st.session_state['desc_text'])
-                st.session_state['desc_size'] = st.number_input("Font Size (px)", 10, 50, st.session_state['desc_size'], key="ds_px")
+                st.session_state['desc_size'] = st.number_input("Font Size (px)", 10, 80, st.session_state['desc_size'], step=2, key="ds_px")
                 st.session_state['desc_color'] = st.color_picker("Body Color", st.session_state['desc_color'])
 
         elif nav_tool == "Attributes":
@@ -369,33 +372,33 @@ with tabs[0]:
             with st.expander("Recipient Name", expanded=True):
                 st.session_state['n_show'] = st.checkbox("Show Name", value=st.session_state['n_show'])
                 st.session_state['n_use_brackets'] = st.checkbox("Preview as [recipient.name]", value=st.session_state['n_use_brackets'])
-                st.session_state['n_size'] = st.number_input("Font Size (px)", 10, 120, st.session_state['n_size'], key="ns_px")
+                st.session_state['n_size'] = st.number_input("Font Size (px)", 10, 150, st.session_state['n_size'], step=2, key="ns_px")
                 st.session_state['n_color'] = st.color_picker("Name Color", st.session_state['n_color'])
 
             with st.expander("Course Title"):
                 st.session_state['c_show'] = st.checkbox("Show Course", value=st.session_state['c_show'])
                 st.session_state['c_prefix'] = st.text_input("Label Prefix", value=st.session_state['c_prefix'])
-                st.session_state['c_size'] = st.number_input("Font Size (px)", 10, 80, st.session_state['c_size'], key="cs_px")
+                st.session_state['c_size'] = st.number_input("Font Size (px)", 10, 100, st.session_state['c_size'], step=2, key="cs_px")
                 st.session_state['c_color'] = st.color_picker("Course Color", st.session_state['c_color'])
 
             with st.expander("Training Date"):
                 st.session_state['d_show'] = st.checkbox("Show Date", value=st.session_state['d_show'])
                 st.session_state['d_prefix'] = st.text_input("Date Prefix", value=st.session_state['d_prefix'])
-                st.session_state['d_size'] = st.number_input("Font Size (px)", 10, 50, st.session_state['d_size'], key="dt_px")
+                st.session_state['d_size'] = st.number_input("Font Size (px)", 10, 80, st.session_state['d_size'], step=2, key="dt_px")
                 st.session_state['d_color'] = st.color_picker("Date Color", st.session_state['d_color'])
 
             with st.expander("Credential ID (UUID)"):
                 st.session_state['id_show'] = st.checkbox("Show Credential ID", value=st.session_state['id_show'])
                 st.session_state['id_use_brackets'] = st.checkbox("Preview as [certificate.uuid]", value=st.session_state['id_use_brackets'])
                 st.session_state['id_prefix'] = st.text_input("ID Prefix", value=st.session_state['id_prefix'])
-                st.session_state['id_size'] = st.number_input("Font Size (px)", 10, 50, st.session_state['id_size'], key="ids_px")
+                st.session_state['id_size'] = st.number_input("Font Size (px)", 10, 80, st.session_state['id_size'], step=2, key="ids_px")
                 st.session_state['id_color'] = st.color_picker("ID Color", st.session_state['id_color'])
 
         elif nav_tool == "QR Code":
             st.subheader("Verification QR Code")
             st.session_state['qr_show'] = st.checkbox("Embed QR Code", value=st.session_state['qr_show'])
             st.info("🔗 **Auto-Generated QR Link**: Encodes the dynamic `credential_id` verification portal URL directly onto each certificate.")
-            st.session_state['qr_size'] = st.number_input("QR Size (px)", 50, 300, st.session_state['qr_size'], key="qrs_px")
+            st.session_state['qr_size'] = st.number_input("QR Size (px)", 50, 300, st.session_state['qr_size'], step=5, key="qrs_px")
             st.session_state['qr_label'] = st.checkbox("Show 'Verification:' Label", value=st.session_state['qr_label'])
 
         elif nav_tool == "Layers":
@@ -409,7 +412,7 @@ with tabs[0]:
             st.session_state['id_x'], st.session_state['id_y'] = st.slider("ID (X, Y)", 0, 1200, st.session_state['id_x']), st.slider("ID Y", 0, 850, st.session_state['id_y'])
             st.session_state['qr_x'], st.session_state['qr_y'] = st.slider("QR Code (X, Y)", 0, 1200, st.session_state['qr_x']), st.slider("QR Code Y", 0, 850, st.session_state['qr_y'])
 
-    # Build config dynamically
+    # Build config dynamically from state
     elem_cfg = {
         'title': {'show': st.session_state['t_show'], 'text': st.session_state['t_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'], 'size': st.session_state['t_size'], 'color': st.session_state['t_color']},
         'issuer': {'show': st.session_state['iss_show'], 'text': st.session_state['iss_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'] + 55, 'size': st.session_state['iss_size'], 'color': st.session_state['iss_color']},
@@ -422,19 +425,25 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("Studio Text Editor & Live Canvas")
+        st.subheader("✏️ Studio Text Editor & Live Canvas")
         
-        # Interactive Text Editor Overlays
-        with st.expander("Live Text Content Editor", expanded=True):
-            ed_col1, ed_col2 = st.columns(2)
-            with ed_col1:
-                st.session_state['t_text'] = st.text_input("Certificate Title", value=st.session_state['t_text'], key="editor_title")
-                st.session_state['iss_text'] = st.text_input("Organization / Issuer", value=st.session_state['iss_text'], key="editor_iss")
-            with ed_col2:
-                st.session_state['c_prefix'] = st.text_input("Course Completion Prefix", value=st.session_state['c_prefix'], key="editor_c_pref")
-                st.session_state['d_prefix'] = st.text_input("Date Prefix Label", value=st.session_state['d_prefix'], key="editor_d_pref")
+        # Interactive Studio Overlay Text Editor
+        with st.expander("📝 Live Text & Font Size Editor (px)", expanded=True):
+            e_col1, e_col2, e_col3 = st.columns([2, 2, 1])
             
-            st.session_state['desc_text'] = st.text_area("Certificate Description Body", value=st.session_state['desc_text'], key="editor_desc")
+            with e_col1:
+                st.session_state['t_text'] = st.text_input("Title Text", value=st.session_state['t_text'], key="ed_t_text")
+                st.session_state['iss_text'] = st.text_input("Issuer / Organization", value=st.session_state['iss_text'], key="ed_iss_text")
+                st.session_state['c_prefix'] = st.text_input("Course Prefix Label", value=st.session_state['c_prefix'], key="ed_c_prefix")
+
+            with e_col2:
+                st.session_state['desc_text'] = st.text_area("Body Description", value=st.session_state['desc_text'], height=100, key="ed_desc_text")
+                st.session_state['d_prefix'] = st.text_input("Date Prefix Label", value=st.session_state['d_prefix'], key="ed_d_prefix")
+
+            with e_col3:
+                st.session_state['t_size'] = st.number_input("Title px", 10, 150, value=st.session_state['t_size'], step=2, key="ed_t_px")
+                st.session_state['n_size'] = st.number_input("Name px", 10, 150, value=st.session_state['n_size'], step=2, key="ed_n_px")
+                st.session_state['c_size'] = st.number_input("Course px", 10, 100, value=st.session_state['c_size'], step=2, key="ed_c_px")
 
         if st.session_state['uploaded_bg']:
             base_img = Image.open(st.session_state['uploaded_bg'])
@@ -456,7 +465,7 @@ with tabs[0]:
         st.image(preview_canvas, caption=f"Live Studio Output (Target: {sample_v_url})", use_container_width=True)
 
         st.divider()
-        if st.button("Process Batch & Generate Certificates", type="primary", use_container_width=True):
+        if st.button("🚀 Process Batch & Generate Certificates", type="primary", use_container_width=True):
             if not st.session_state['uploaded_csv']:
                 st.warning("Please upload a CSV in the Uploads tab to process batch certificates.")
             else:
@@ -492,8 +501,8 @@ with tabs[0]:
                 conn.commit()
                 conn.close()
                 
-                st.success(f"Successfully generated {count} custom credentials!")
-                st.download_button("Download Certificates ZIP Archive", data=zip_buffer.getvalue(), file_name="certificates.zip", mime="application/zip")
+                st.success(f"🎉 Successfully generated {count} custom credentials!")
+                st.download_button("📦 Download Certificates ZIP Archive", data=zip_buffer.getvalue(), file_name="certificates.zip", mime="application/zip")
 
 # ------------------------------------------
 # TAB 2: EMAIL DISTRIBUTION ENGINE
@@ -557,7 +566,7 @@ Mental Health First Aid Organization"""
                 server.login(sender_email, app_password)
 
                 for idx, row in df_pending.iterrows():
-                    v_url = f"?id={row['credential_id']}"
+                    v_url = f"https://certificate-tv.streamlit.app/?id={row['credential_id']}"
                     custom_body = email_body.replace("{{recipient_name}}", row['recipient_name'])\
                                             .replace("{{course_name}}", row['course_name'])\
                                             .replace("{{credential_id}}", row['credential_id'])\
