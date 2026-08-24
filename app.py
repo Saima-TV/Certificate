@@ -1,7 +1,7 @@
 """
 Digital Credential Issuance, Verification & Analytics Platform
 Built with Streamlit, Pillow, SQLite, and Plotly
-Full Canva-style Studio Engine with Pixel-accurate Font Sizing
+Streamlined Batch Processing with Direct Download and Automated Emailing
 """
 
 import streamlit as st
@@ -143,7 +143,6 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
             return ImageFont.truetype("arial.ttf", size_px)
         except IOError:
             try:
-                # Pillow >=10.1.0 font scaling support
                 return ImageFont.load_default(size=size_px)
             except TypeError:
                 return ImageFont.load_default()
@@ -196,6 +195,68 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
             draw.text((elem_cfg['qr']['x'], elem_cfg['qr']['y'] - 18), "Verification:", fill="#475569", font=font_qr)
 
     return img
+
+def send_batch_emails(df_recipients):
+    """
+    Helper to dispatch email notifications via SMTP for processed CSV recipients.
+    """
+    app_password = None
+    if hasattr(st, "secrets") and "GMAIL_APP_PASSWORD" in st.secrets:
+        app_password = st.secrets["GMAIL_APP_PASSWORD"]
+    else:
+        app_password = os.environ.get("GMAIL_APP_PASSWORD")
+
+    sender_email = st.secrets.get("GMAIL_ADDRESS", "your.email@gmail.com") if hasattr(st, "secrets") else "your.email@gmail.com"
+
+    if not app_password:
+        st.error("❌ Email password missing! Please set `GMAIL_APP_PASSWORD` in your Streamlit Secrets (`.streamlit/secrets.toml`).")
+        return False
+
+    success_count = 0
+    progress_bar = st.progress(0)
+
+    try:
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login(sender_email, app_password)
+
+        email_subject = "Your Official Digital Certificate is Ready!"
+        default_gmail_body = """Hi {{recipient_name}},
+
+Congratulations on completing {{course_name}}!
+
+Your official digital certificate has been issued. You can view, verify, and add your certificate to your LinkedIn profile using the link below:
+
+Digital Credential Verification Link:
+{{verification_url}}
+
+Credential ID: {{credential_id}}
+
+Best regards,
+Mental Health First Aid Organization"""
+
+        for idx, row in df_recipients.iterrows():
+            v_url = f"https://certificate-tv.streamlit.app/?id={row['credential_id']}"
+            custom_body = default_gmail_body.replace("{{recipient_name}}", row['name'])\
+                                            .replace("{{course_name}}", row['course'])\
+                                            .replace("{{credential_id}}", row['credential_id'])\
+                                            .replace("{{verification_url}}", v_url)
+
+            msg = MIMEMultipart()
+            msg['From'] = sender_email
+            msg['To'] = row['email']
+            msg['Subject'] = email_subject
+            msg.attach(MIMEText(custom_body, 'plain'))
+
+            server.send_message(msg)
+            success_count += 1
+            progress_bar.progress((idx + 1) / len(df_recipients))
+
+        server.quit()
+        st.success(f"✅ Dispatched {success_count} emails successfully via Gmail SMTP!")
+        return True
+    except Exception as e:
+        st.error(f"SMTP Error: {e}")
+        return False
 
 # ==========================================
 # 3. PAGE CONFIG & ROUTING
@@ -319,7 +380,8 @@ with tabs[0]:
         'd_show': True, 'd_prefix': 'Training Date:', 'd_size': 16, 'd_color': '#334155', 'd_x': 80, 'd_y': 700,
         'id_show': True, 'id_use_brackets': True, 'id_prefix': 'Issue Date / ID:', 'id_size': 16, 'id_color': '#334155', 'id_x': 380, 'id_y': 700,
         'qr_show': True, 'qr_size': 130, 'qr_label': True, 'qr_x': 980, 'qr_y': 650,
-        'template_style': 'Classic Blue', 'uploaded_bg': None, 'uploaded_csv': None
+        'template_style': 'Classic Blue', 'uploaded_bg': None, 'uploaded_csv': None,
+        'batch_processed': False, 'batch_zip': None, 'batch_df': None
     }
     
     for k, v in defaults.items():
@@ -375,7 +437,7 @@ with tabs[0]:
                 st.session_state['n_size'] = st.number_input("Font Size (px)", 10, 150, st.session_state['n_size'], step=2, key="ns_px")
                 st.session_state['n_color'] = st.color_picker("Name Color", st.session_state['n_color'])
 
-            with st.expander("Course Title"):
+            with st.expander("Editable Course Title", expanded=True):
                 st.session_state['c_show'] = st.checkbox("Show Course", value=st.session_state['c_show'])
                 st.session_state['c_prefix'] = st.text_input("Label Prefix", value=st.session_state['c_prefix'])
                 st.session_state['c_size'] = st.number_input("Font Size (px)", 10, 100, st.session_state['c_size'], step=2, key="cs_px")
@@ -425,25 +487,7 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("✏️ Studio Text Editor & Live Canvas")
-        
-        # Interactive Studio Overlay Text Editor
-        with st.expander("📝 Live Text & Font Size Editor (px)", expanded=True):
-            e_col1, e_col2, e_col3 = st.columns([2, 2, 1])
-            
-            with e_col1:
-                st.session_state['t_text'] = st.text_input("Title Text", value=st.session_state['t_text'], key="ed_t_text")
-                st.session_state['iss_text'] = st.text_input("Issuer / Organization", value=st.session_state['iss_text'], key="ed_iss_text")
-                st.session_state['c_prefix'] = st.text_input("Course Prefix Label", value=st.session_state['c_prefix'], key="ed_c_prefix")
-
-            with e_col2:
-                st.session_state['desc_text'] = st.text_area("Body Description", value=st.session_state['desc_text'], height=100, key="ed_desc_text")
-                st.session_state['d_prefix'] = st.text_input("Date Prefix Label", value=st.session_state['d_prefix'], key="ed_d_prefix")
-
-            with e_col3:
-                st.session_state['t_size'] = st.number_input("Title px", 10, 150, value=st.session_state['t_size'], step=2, key="ed_t_px")
-                st.session_state['n_size'] = st.number_input("Name px", 10, 150, value=st.session_state['n_size'], step=2, key="ed_n_px")
-                st.session_state['c_size'] = st.number_input("Course px", 10, 100, value=st.session_state['c_size'], step=2, key="ed_c_px")
+        st.subheader("🎨 Studio Live Canvas Preview")
 
         if st.session_state['uploaded_bg']:
             base_img = Image.open(st.session_state['uploaded_bg'])
@@ -462,12 +506,14 @@ with tabs[0]:
             sample_v_url,
             elem_cfg
         )
-        st.image(preview_canvas, caption=f"Live Studio Output (Target: {sample_v_url})", use_container_width=True)
+        st.image(preview_canvas, caption=f"Live Studio Canvas Output (Target: {sample_v_url})", use_container_width=True)
 
         st.divider()
-        if st.button("🚀 Process Batch & Generate Certificates", type="primary", use_container_width=True):
+        
+        # Batch Processing Engine
+        if st.button("🚀 Process Batch & Prepare Certificates", type="primary", use_container_width=True):
             if not st.session_state['uploaded_csv']:
-                st.warning("Please upload a CSV in the Uploads tab to process batch certificates.")
+                st.warning("Please upload a CSV file in the 'Uploads' tool tab first.")
             else:
                 df_recipients = pd.read_csv(st.session_state['uploaded_csv'])
                 zip_buffer = io.BytesIO()
@@ -478,6 +524,8 @@ with tabs[0]:
                 elem_cfg_final = elem_cfg.copy()
                 elem_cfg_final['name']['placeholders'] = False
                 elem_cfg_final['id']['placeholders'] = False
+
+                processed_records = []
 
                 with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     for idx, row in df_recipients.iterrows():
@@ -496,13 +544,42 @@ with tabs[0]:
                             INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date)
                             VALUES (?, ?, ?, ?, ?)
                         """, (cred_id, row['name'], row['email'], row['course'], str(row['date'])))
+                        
+                        processed_records.append({
+                            'credential_id': cred_id,
+                            'name': row['name'],
+                            'email': row['email'],
+                            'course': row['course']
+                        })
                         count += 1
                         
                 conn.commit()
                 conn.close()
                 
-                st.success(f"🎉 Successfully generated {count} custom credentials!")
-                st.download_button("📦 Download Certificates ZIP Archive", data=zip_buffer.getvalue(), file_name="certificates.zip", mime="application/zip")
+                st.session_state['batch_processed'] = True
+                st.session_state['batch_zip'] = zip_buffer.getvalue()
+                st.session_state['batch_df'] = pd.DataFrame(processed_records)
+                st.success(f"🎉 Successfully prepared {count} custom certificates!")
+
+        # Post-Processing Actions (2 Options: Download OR Send Email)
+        if st.session_state['batch_processed']:
+            st.subheader("📦 Next Actions: Choose How to Proceed")
+            
+            act_col1, act_col2 = st.columns(2)
+            
+            with act_col1:
+                st.download_button(
+                    label="⬇️ Download Certificates (.ZIP Archive)",
+                    data=st.session_state['batch_zip'],
+                    file_name="certificates_batch.zip",
+                    mime="application/zip",
+                    use_container_width=True
+                )
+                
+            with act_col2:
+                if st.button("📧 Send Email to Users in CSV", type="primary", use_container_width=True):
+                    if st.session_state['batch_df'] is not None:
+                        send_batch_emails(st.session_state['batch_df'])
 
 # ------------------------------------------
 # TAB 2: EMAIL DISTRIBUTION ENGINE
@@ -542,50 +619,13 @@ Mental Health First Aid Organization"""
         email_body = st.text_area("Email Body Template", value=default_gmail_body, height=200)
 
     st.divider()
-    if st.button("📨 Dispatch Batch Emails", type="primary"):
-        app_password = None
-        if hasattr(st, "secrets") and "GMAIL_APP_PASSWORD" in st.secrets:
-            app_password = st.secrets["GMAIL_APP_PASSWORD"]
-        else:
-            app_password = os.environ.get("GMAIL_APP_PASSWORD")
+    if st.button("📨 Dispatch Batch Emails to All Issued Records", type="primary"):
+        conn = sqlite3.connect(DB_FILE)
+        df_pending = pd.read_sql_query("SELECT credential_id, recipient_name as name, email, course_name as course FROM credentials", conn)
+        conn.close()
 
-        if not app_password:
-            st.error("❌ Email password missing! Please set `GMAIL_APP_PASSWORD` in your Streamlit Secrets (`.streamlit/secrets.toml`).")
-        elif not sender_email:
-            st.error("Please enter a valid sender email address.")
-        else:
-            conn = sqlite3.connect(DB_FILE)
-            df_pending = pd.read_sql_query("SELECT * FROM credentials", conn)
-            conn.close()
-
-            success_count = 0
-            progress_bar = st.progress(0)
-
-            try:
-                server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-                server.login(sender_email, app_password)
-
-                for idx, row in df_pending.iterrows():
-                    v_url = f"https://certificate-tv.streamlit.app/?id={row['credential_id']}"
-                    custom_body = email_body.replace("{{recipient_name}}", row['recipient_name'])\
-                                            .replace("{{course_name}}", row['course_name'])\
-                                            .replace("{{credential_id}}", row['credential_id'])\
-                                            .replace("{{verification_url}}", v_url)
-
-                    msg = MIMEMultipart()
-                    msg['From'] = sender_email
-                    msg['To'] = row['email']
-                    msg['Subject'] = email_subject
-                    msg.attach(MIMEText(custom_body, 'plain'))
-
-                    server.send_message(msg)
-                    success_count += 1
-                    progress_bar.progress((idx + 1) / len(df_pending))
-
-                server.quit()
-                st.success(f"✅ Dispatched {success_count} emails successfully!")
-            except Exception as e:
-                st.error(f"SMTP Error: {e}")
+        if not df_pending.empty:
+            send_batch_emails(df_pending)
 
 # ------------------------------------------
 # TAB 3: VIRAL ANALYTICS
