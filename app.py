@@ -79,7 +79,7 @@ def seed_dummy_data():
     if count == 0:
         dummy_creds = [
             ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@techvalley.pk", "Digital Marketing", "2026-08-19", "VALID"),
-            ("812ab341-12cd-4123-8821-b6072dd54fa1", "Alex Chen", "alex@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
+            ("812ab341-12cd-4123-8821-b6072dd54fa1", "Ali Khan", "ali@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
         ]
         cursor.executemany("""
             INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date, status)
@@ -198,7 +198,7 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
 # ==========================================
 st.set_page_config(
     page_title="Digital Credential Engine",
-    page_icon="🎓",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -223,7 +223,7 @@ if target_id:
     record = cursor.fetchone()
     conn.close()
 
-    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>🎓 Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
     
     if not record:
         st.error(f"❌ Invalid Credential ID: `{target_id}`. Verification failed.")
@@ -296,10 +296,10 @@ if target_id:
 st.title("🎓 Digital Credential Management Platform")
 
 tabs = st.tabs([
-    "🎨 1. Graphic Designer & Template Engine",
-    "📧 2. Email Distribution Engine",
-    "📈 3. Analytics Dashboard",
-    "🔍 4. Credentials Registry"
+    "1. Graphic Designer & Template Engine",
+    "2. Email Distribution Engine",
+    "3. Analytics Dashboard",
+    "4. Credentials Registry"
 ])
 
 # ------------------------------------------
@@ -422,10 +422,10 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("✏️ Studio Text Editor & Live Canvas")
+        st.subheader("Studio Text Editor & Live Canvas")
         
         # Interactive Text Editor Overlays
-        with st.expander("📝 Live Text Content Editor", expanded=True):
+        with st.expander("Live Text Content Editor", expanded=True):
             ed_col1, ed_col2 = st.columns(2)
             with ed_col1:
                 st.session_state['t_text'] = st.text_input("Certificate Title", value=st.session_state['t_text'], key="editor_title")
@@ -456,7 +456,7 @@ with tabs[0]:
         st.image(preview_canvas, caption=f"Live Studio Output (Target: {sample_v_url})", use_container_width=True)
 
         st.divider()
-        if st.button("🚀 Process Batch & Generate Certificates", type="primary", use_container_width=True):
+        if st.button("Process Batch & Generate Certificates", type="primary", use_container_width=True):
             if not st.session_state['uploaded_csv']:
                 st.warning("Please upload a CSV in the Uploads tab to process batch certificates.")
             else:
@@ -492,8 +492,8 @@ with tabs[0]:
                 conn.commit()
                 conn.close()
                 
-                st.success(f"🎉 Successfully generated {count} custom credentials!")
-                st.download_button("📦 Download Certificates ZIP Archive", data=zip_buffer.getvalue(), file_name="certificates.zip", mime="application/zip")
+                st.success(f"Successfully generated {count} custom credentials!")
+                st.download_button("Download Certificates ZIP Archive", data=zip_buffer.getvalue(), file_name="certificates.zip", mime="application/zip")
 
 # ------------------------------------------
 # TAB 2: EMAIL DISTRIBUTION ENGINE
