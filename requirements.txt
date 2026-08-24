@@ -1,5 +1,5 @@
 streamlit
-Pillow
+Pillow>=10.1.0
 qrcode
 pandas
 numpy
