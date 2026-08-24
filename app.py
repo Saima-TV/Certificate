@@ -198,7 +198,7 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
 # ==========================================
 st.set_page_config(
     page_title="Digital Credential Engine",
-    page_icon="",
+    page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -293,7 +293,7 @@ if target_id:
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("🎓 Digital Credential Management Platform")
+st.title("Digital Credential Management Platform")
 
 tabs = st.tabs([
     "1. Graphic Designer & Template Engine",
