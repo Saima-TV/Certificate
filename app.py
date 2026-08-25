@@ -78,8 +78,7 @@ def seed_dummy_data():
     
     if count == 0:
         dummy_creds = [
-            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "Mental Health First Aid Standard", "2026-08-19", "VALID"),
-            ("812ab341-12cd-4123-8821-b6072dd54fa1", "Alex Chen", "alex@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
+            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "AI Bootcamp", "2026-08-19", "VALID")
         ]
         cursor.executemany("""
             INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date, status)
@@ -247,7 +246,7 @@ def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template
 # 3. PAGE CONFIG & ROUTING
 # ==========================================
 st.set_page_config(
-    page_title="Digital Credential Engine",
+    page_title="Tech Valley Digital Credential",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -273,7 +272,7 @@ if target_id:
     record = cursor.fetchone()
     conn.close()
 
-    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>🎓 Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
     
     if not record:
         st.error(f"❌ Invalid Credential ID: `{target_id}`. Verification failed.")
@@ -343,13 +342,13 @@ if target_id:
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("🎓 Digital Credential Management Platform")
+st.title("igital Credential Management Platform")
 
 tabs = st.tabs([
-    "🎨 1. Graphic Designer & Template Engine",
-    "📧 2. Email Distribution Engine",
-    "📈 3. Analytics Dashboard",
-    "🔍 4. Credentials Registry"
+    "1. Graphic Designer & Template Engine",
+    "2. Email Distribution Engine",
+    "3. Analytics Dashboard",
+    "4. Credentials Registry"
 ])
 
 # ------------------------------------------
@@ -358,7 +357,7 @@ tabs = st.tabs([
 with tabs[0]:
     defaults = {
         't_show': True, 't_text': 'Certificate of Participation', 't_size': 42, 't_color': '#1E3A8A', 't_x': 200, 't_y': 100,
-        'iss_show': True, 'iss_text': 'Mental Health First Aid Organization', 'iss_size': 20, 'iss_color': '#3B82F6',
+        'iss_show': True, 'iss_text': 'Tech Valley', 'iss_size': 20, 'iss_color': '#3B82F6',
         'desc_show': True, 'desc_text': 'Participants learn skills for providing initial help to individuals experiencing mental health challenges.', 'desc_size': 15, 'desc_color': '#475569', 'desc_x': 200, 'desc_y': 450,
         'n_show': True, 'n_use_brackets': True, 'n_size': 48, 'n_color': '#0F172A', 'n_x': 200, 'n_y': 280,
         'c_show': True, 'c_prefix': 'has completed', 'c_size': 26, 'c_color': '#1E293B', 'c_x': 200, 'c_y': 380,
@@ -444,7 +443,7 @@ with tabs[0]:
         elif nav_tool == "QR Code":
             st.subheader("Verification QR Code")
             st.session_state['qr_show'] = st.checkbox("Embed QR Code", value=st.session_state['qr_show'])
-            st.info("🔗 **Auto-Generated QR Link**: Encodes the dynamic `credential_id` verification portal URL directly onto each certificate.")
+            st.info(" **Auto-Generated QR Link**: Encodes the dynamic `credential_id` verification portal URL directly onto each certificate.")
             st.session_state['qr_size'] = st.number_input("QR Size (px)", 50, 300, st.session_state['qr_size'], step=5, key="qrs_px")
             st.session_state['qr_label'] = st.checkbox("Show 'Verification:' Label", value=st.session_state['qr_label'])
 
@@ -472,7 +471,7 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("🎨 Studio Live Canvas Preview")
+        st.subheader("Studio Live Canvas Preview")
 
         if st.session_state['uploaded_bg']:
             base_img = Image.open(st.session_state['uploaded_bg'])
@@ -485,7 +484,7 @@ with tabs[0]:
         preview_canvas = render_dynamic_certificate(
             base_img,
             "recipient.name",
-            "Mental Health First Aid Standard (Virtual)",
+            "Tech Valley",
             "August 19, 2026",
             sample_uuid,
             sample_v_url,
@@ -496,7 +495,7 @@ with tabs[0]:
         st.divider()
         
         # Batch Processing Engine
-        if st.button("🚀 Process Batch & Prepare Certificates", type="primary", use_container_width=True):
+        if st.button("Process Batch & Prepare Certificates", type="primary", use_container_width=True):
             if not st.session_state['uploaded_csv']:
                 st.warning("Please upload a CSV file in the 'Uploads' tool tab first.")
             else:
@@ -544,11 +543,11 @@ with tabs[0]:
                 st.session_state['batch_processed'] = True
                 st.session_state['batch_zip'] = zip_buffer.getvalue()
                 st.session_state['batch_df'] = pd.DataFrame(processed_records)
-                st.success(f"🎉 Successfully prepared {count} custom certificates!")
+                st.success(f"Successfully prepared {count} custom certificates!")
 
         # Post-Processing Actions (2 Options: Download OR Customized Batch Email)
         if st.session_state['batch_processed']:
-            st.subheader("📦 Next Actions: Choose How to Proceed")
+            st.subheader("Next Actions: Choose How to Proceed")
             
             act_col1, act_col2 = st.columns([1, 1.2])
             
@@ -581,7 +580,7 @@ Digital Credential Verification Link:
 Credential ID: {{credential_id}}
 
 Best regards,
-Mental Health First Aid Organization"""
+Tech Valley"""
 
                     custom_body = st.text_area("Email Body Template", value=default_body_template, height=180, key="post_email_body")
                     st.caption("Placeholders: `{{recipient_name}}`, `{{course_name}}`, `{{credential_id}}`, `{{verification_url}}`")
@@ -600,7 +599,7 @@ with tabs[1]:
     col_smtp, col_template = st.columns([1, 1.2])
 
     with col_smtp:
-        st.subheader("✉️ Sender Configuration")
+        st.subheader("Sender Configuration")
         
         default_sender = st.secrets.get("GMAIL_ADDRESS", "your.email@gmail.com") if hasattr(st, "secrets") else "your.email@gmail.com"
         sender_email = st.text_input("Sender Email Address", value=default_sender)
@@ -608,7 +607,7 @@ with tabs[1]:
         st.info("🔒 **Security Active:** Passwords and SMTP authentication credentials are automatically loaded securely from backend Secrets.")
 
     with col_template:
-        st.subheader("📧 Email Message Template")
+        st.subheader("Email Message Template")
         email_subject = st.text_input("Subject Line", value="Your Digital Credential Certificate is Ready!")
         
         default_gmail_body = """Hi {{recipient_name}},
@@ -623,7 +622,7 @@ Digital Credential Verification Link:
 Credential ID: {{credential_id}}
 
 Best regards,
-Mental Health First Aid Organization"""
+Tech Valley"""
 
         email_body = st.text_area("Email Body Template", value=default_gmail_body, height=200)
 
