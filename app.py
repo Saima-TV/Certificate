@@ -1,7 +1,7 @@
 """
 Digital Credential Issuance, Verification & Analytics Platform
 Built with Streamlit, Pillow, SQLite, and Plotly
-Streamlined Batch Processing with Direct Download and Automated Emailing
+Post-Processing Email Template Editor & Dynamic Email Dispatcher
 """
 
 import streamlit as st
@@ -196,9 +196,9 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
 
     return img
 
-def send_batch_emails(df_recipients):
+def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template):
     """
-    Helper to dispatch email notifications via SMTP for processed CSV recipients.
+    Helper to dispatch customized email notifications via SMTP to CSV recipients.
     """
     app_password = None
     if hasattr(st, "secrets") and "GMAIL_APP_PASSWORD" in st.secrets:
@@ -219,32 +219,17 @@ def send_batch_emails(df_recipients):
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
         server.login(sender_email, app_password)
 
-        email_subject = "Your Official Digital Certificate is Ready!"
-        default_gmail_body = """Hi {{recipient_name}},
-
-Congratulations on completing {{course_name}}!
-
-Your official digital certificate has been issued. You can view, verify, and add your certificate to your LinkedIn profile using the link below:
-
-Digital Credential Verification Link:
-{{verification_url}}
-
-Credential ID: {{credential_id}}
-
-Best regards,
-Mental Health First Aid Organization"""
-
         for idx, row in df_recipients.iterrows():
             v_url = f"https://certificate-tv.streamlit.app/?id={row['credential_id']}"
-            custom_body = default_gmail_body.replace("{{recipient_name}}", row['name'])\
-                                            .replace("{{course_name}}", row['course'])\
-                                            .replace("{{credential_id}}", row['credential_id'])\
-                                            .replace("{{verification_url}}", v_url)
+            custom_body = custom_body_template.replace("{{recipient_name}}", str(row['name']))\
+                                              .replace("{{course_name}}", str(row['course']))\
+                                              .replace("{{credential_id}}", str(row['credential_id']))\
+                                              .replace("{{verification_url}}", v_url)
 
             msg = MIMEMultipart()
             msg['From'] = sender_email
             msg['To'] = row['email']
-            msg['Subject'] = email_subject
+            msg['Subject'] = custom_subject
             msg.attach(MIMEText(custom_body, 'plain'))
 
             server.send_message(msg)
@@ -252,7 +237,7 @@ Mental Health First Aid Organization"""
             progress_bar.progress((idx + 1) / len(df_recipients))
 
         server.quit()
-        st.success(f"✅ Dispatched {success_count} emails successfully via Gmail SMTP!")
+        st.success(f"✅ Dispatched {success_count} emails successfully to CSV recipients!")
         return True
     except Exception as e:
         st.error(f"SMTP Error: {e}")
@@ -561,15 +546,16 @@ with tabs[0]:
                 st.session_state['batch_df'] = pd.DataFrame(processed_records)
                 st.success(f"🎉 Successfully prepared {count} custom certificates!")
 
-        # Post-Processing Actions (2 Options: Download OR Send Email)
+        # Post-Processing Actions (2 Options: Download OR Customized Batch Email)
         if st.session_state['batch_processed']:
             st.subheader("📦 Next Actions: Choose How to Proceed")
             
-            act_col1, act_col2 = st.columns(2)
+            act_col1, act_col2 = st.columns([1, 1.2])
             
             with act_col1:
+                st.markdown("#### Option 1: Download ZIP Archive")
                 st.download_button(
-                    label="⬇️ Download Certificates (.ZIP Archive)",
+                    label="⬇️ Download Certificates (.ZIP)",
                     data=st.session_state['batch_zip'],
                     file_name="certificates_batch.zip",
                     mime="application/zip",
@@ -577,9 +563,32 @@ with tabs[0]:
                 )
                 
             with act_col2:
-                if st.button("📧 Send Email to Users in CSV", type="primary", use_container_width=True):
+                st.markdown("#### Option 2: Send Custom Email to CSV Users")
+                
+                # Customizable Email Template Expander
+                with st.expander("✉️ Customize Email Message Template", expanded=True):
+                    custom_subject = st.text_input("Subject Line", value="Your Official Digital Certificate is Ready!", key="post_email_subj")
+                    
+                    default_body_template = """Hi {{recipient_name}},
+
+Congratulations on completing {{course_name}}!
+
+Your official digital certificate has been issued. You can view, verify, and add your certificate to your LinkedIn profile using the link below:
+
+Digital Credential Verification Link:
+{{verification_url}}
+
+Credential ID: {{credential_id}}
+
+Best regards,
+Mental Health First Aid Organization"""
+
+                    custom_body = st.text_area("Email Body Template", value=default_body_template, height=180, key="post_email_body")
+                    st.caption("Placeholders: `{{recipient_name}}`, `{{course_name}}`, `{{credential_id}}`, `{{verification_url}}`")
+
+                if st.button("📨 Send Custom Email to Users in CSV", type="primary", use_container_width=True):
                     if st.session_state['batch_df'] is not None:
-                        send_batch_emails(st.session_state['batch_df'])
+                        send_custom_batch_emails(st.session_state['batch_df'], custom_subject, custom_body)
 
 # ------------------------------------------
 # TAB 2: EMAIL DISTRIBUTION ENGINE
@@ -625,7 +634,7 @@ Mental Health First Aid Organization"""
         conn.close()
 
         if not df_pending.empty:
-            send_batch_emails(df_pending)
+            send_custom_batch_emails(df_pending, email_subject, email_body)
 
 # ------------------------------------------
 # TAB 3: VIRAL ANALYTICS
