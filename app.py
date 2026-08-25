@@ -497,7 +497,7 @@ with tabs[0]:
         preview_canvas = render_dynamic_certificate(
             base_img,
             "recipient.name",
-            "Mental Health First Aid Standard (Virtual)",
+            "AI Bootcamp",
             "August 19, 2026",
             sample_uuid,
             sample_v_url,
