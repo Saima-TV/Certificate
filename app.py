@@ -78,7 +78,8 @@ def seed_dummy_data():
     
     if count == 0:
         dummy_creds = [
-            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "AI Bootcamp", "2026-08-19", "VALID")
+            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "Mental Health First Aid Standard", "2026-08-19", "VALID"),
+            ("812ab341-12cd-4123-8821-b6072dd54fa1", "Alex Chen", "alex@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
         ]
         cursor.executemany("""
             INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date, status)
@@ -197,7 +198,7 @@ def render_dynamic_certificate(base_img, r_name, c_name, i_date, c_id, v_url, el
 
 def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template):
     """
-    Helper to dispatch customized email notifications via SMTP to CSV recipients.
+    Helper to dispatch customized email notifications via SMTP strictly to selected recipients.
     """
     app_password = None
     if hasattr(st, "secrets") and "GMAIL_APP_PASSWORD" in st.secrets:
@@ -211,6 +212,10 @@ def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template
         st.error("❌ Email password missing! Please set `GMAIL_APP_PASSWORD` in your Streamlit Secrets (`.streamlit/secrets.toml`).")
         return False
 
+    if df_recipients.empty:
+        st.warning("⚠️ No recipients selected. Please check at least one user in the table below.")
+        return False
+
     success_count = 0
     progress_bar = st.progress(0)
 
@@ -218,12 +223,8 @@ def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
         server.login(sender_email, app_password)
 
-        for idx, row in df_recipients.iterrows():
-        # Replace the old Streamlit base URL:
-        # v_url = f"https://certificate-tv.streamlit.app/?id={row['credential_id']}"
-
-        # With your Google Site Verification URL:
-        v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={row['credential_id']}"
+        for idx, (_, row) in enumerate(df_recipients.iterrows()):
+            v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={row['credential_id']}"
             custom_body = custom_body_template.replace("{{recipient_name}}", str(row['name']))\
                                               .replace("{{course_name}}", str(row['course']))\
                                               .replace("{{credential_id}}", str(row['credential_id']))\
@@ -240,21 +241,31 @@ def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template
             progress_bar.progress((idx + 1) / len(df_recipients))
 
         server.quit()
-        st.success(f"✅ Dispatched {success_count} emails successfully to CSV recipients!")
+        st.success(f"✅ Dispatched {success_count} emails successfully to selected recipients!")
         return True
     except Exception as e:
         st.error(f"SMTP Error: {e}")
         return False
 
 # ==========================================
-# 3. PAGE CONFIG & ROUTING
+# 3. PAGE CONFIG & HIDE FOOTER
 # ==========================================
 st.set_page_config(
-    page_title="Tech Valley Digital Credential",
+    page_title="Digital Credential Engine",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Hide Streamlit Footer & Main Menu Header
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 init_db()
 seed_dummy_data()
@@ -276,7 +287,7 @@ if target_id:
     record = cursor.fetchone()
     conn.close()
 
-    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>🎓 Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
     
     if not record:
         st.error(f"❌ Invalid Credential ID: `{target_id}`. Verification failed.")
@@ -288,15 +299,11 @@ if target_id:
         col_cert, col_meta = st.columns([1.6, 1])
         
         base_template = create_default_template("Classic Blue")
-        # Replace the old Streamlit base URL:
-# v_url = f"https://certificate-tv.streamlit.app/?id={c_id}"
-# With your Google Site Verification URL:
-v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={cid}"
-        
+        v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={c_id}"
         
         default_cfg = {
             'title': {'show': True, 'text': 'Certificate of Participation', 'x': 250, 'y': 100, 'size': 44, 'color': '#1E3A8A'},
-            'issuer': {'show': True, 'text': 'Tech Valley', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
+            'issuer': {'show': True, 'text': 'Mental Health First Aid Organization', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
             'name': {'show': True, 'x': 250, 'y': 280, 'size': 48, 'color': '#1E293B', 'placeholders': False},
             'course': {'show': True, 'prefix': 'has completed', 'x': 250, 'y': 380, 'size': 28, 'color': '#0F172A'},
             'desc': {'show': True, 'text': 'Participants learn skills for providing support to individuals in need.', 'x': 250, 'y': 440, 'size': 16, 'color': '#64748B'},
@@ -341,22 +348,22 @@ v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={cid}"
             st.markdown(f'<a href="{linkedin_share_url}" target="_blank"><button style="width:100%; background-color:#0A66C2; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Add to LinkedIn Profile</button></a>', unsafe_allow_html=True)
 
             st.markdown("---")
-           # if st.button("← Back to Admin Console"):
-           #     st.query_params.clear()
-            #    st.rerun()
+            if st.button("← Back to Admin Console"):
+                st.query_params.clear()
+                st.rerun()
 
     st.stop()
 
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("Digital Credential Management Platform")
+st.title("🎓 Digital Credential Management Platform")
 
 tabs = st.tabs([
-    "1. Certificate Template",
-    "2. Email Distribution",
-    "3. Analytics Dashboard",
-    "4. Credentials Registry"
+    "🎨 1. Graphic Designer & Template Engine",
+    "📧 2. Email Distribution Engine",
+    "📈 3. Analytics Dashboard",
+    "🔍 4. Credentials Registry"
 ])
 
 # ------------------------------------------
@@ -365,7 +372,7 @@ tabs = st.tabs([
 with tabs[0]:
     defaults = {
         't_show': True, 't_text': 'Certificate of Participation', 't_size': 42, 't_color': '#1E3A8A', 't_x': 200, 't_y': 100,
-        'iss_show': True, 'iss_text': 'Tech Valley', 'iss_size': 20, 'iss_color': '#3B82F6',
+        'iss_show': True, 'iss_text': 'Mental Health First Aid Organization', 'iss_size': 20, 'iss_color': '#3B82F6',
         'desc_show': True, 'desc_text': 'Participants learn skills for providing initial help to individuals experiencing mental health challenges.', 'desc_size': 15, 'desc_color': '#475569', 'desc_x': 200, 'desc_y': 450,
         'n_show': True, 'n_use_brackets': True, 'n_size': 48, 'n_color': '#0F172A', 'n_x': 200, 'n_y': 280,
         'c_show': True, 'c_prefix': 'has completed', 'c_size': 26, 'c_color': '#1E293B', 'c_x': 200, 'c_y': 380,
@@ -451,7 +458,7 @@ with tabs[0]:
         elif nav_tool == "QR Code":
             st.subheader("Verification QR Code")
             st.session_state['qr_show'] = st.checkbox("Embed QR Code", value=st.session_state['qr_show'])
-            st.info(" **Auto-Generated QR Link**: Encodes the dynamic `credential_id` verification portal URL directly onto each certificate.")
+            st.info("🔗 **Auto-Generated QR Link**: Encodes the dynamic `credential_id` verification portal URL directly onto each certificate.")
             st.session_state['qr_size'] = st.number_input("QR Size (px)", 50, 300, st.session_state['qr_size'], step=5, key="qrs_px")
             st.session_state['qr_label'] = st.checkbox("Show 'Verification:' Label", value=st.session_state['qr_label'])
 
@@ -466,7 +473,6 @@ with tabs[0]:
             st.session_state['id_x'], st.session_state['id_y'] = st.slider("ID (X, Y)", 0, 1200, st.session_state['id_x']), st.slider("ID Y", 0, 850, st.session_state['id_y'])
             st.session_state['qr_x'], st.session_state['qr_y'] = st.slider("QR Code (X, Y)", 0, 1200, st.session_state['qr_x']), st.slider("QR Code Y", 0, 850, st.session_state['qr_y'])
 
-    # Build config dynamically from state
     elem_cfg = {
         'title': {'show': st.session_state['t_show'], 'text': st.session_state['t_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'], 'size': st.session_state['t_size'], 'color': st.session_state['t_color']},
         'issuer': {'show': st.session_state['iss_show'], 'text': st.session_state['iss_text'], 'x': st.session_state['t_x'], 'y': st.session_state['t_y'] + 55, 'size': st.session_state['iss_size'], 'color': st.session_state['iss_color']},
@@ -479,7 +485,7 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("Studio Live Canvas Preview")
+        st.subheader("🎨 Studio Live Canvas Preview")
 
         if st.session_state['uploaded_bg']:
             base_img = Image.open(st.session_state['uploaded_bg'])
@@ -487,17 +493,12 @@ with tabs[0]:
             base_img = create_default_template(st.session_state['template_style'])
 
         sample_uuid = "916bc487-09cc-4659-9794-a7072dd65ec7"
-        #sample_v_url = f"https://certificate-tv.streamlit.app/?id={sample_uuid}"
-        
-# With your Google Site Verification URL:
-sample_v_url = https://sites.google.com/techvalley.pk/saimagul/certificate?id={sample_uuid}"
- 
-
+        sample_v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={sample_uuid}"
 
         preview_canvas = render_dynamic_certificate(
             base_img,
             "recipient.name",
-            "Tech Valley",
+            "Mental Health First Aid Standard (Virtual)",
             "August 19, 2026",
             sample_uuid,
             sample_v_url,
@@ -507,8 +508,7 @@ sample_v_url = https://sites.google.com/techvalley.pk/saimagul/certificate?id={s
 
         st.divider()
         
-        # Batch Processing Engine
-        if st.button("Process Batch & Prepare Certificates", type="primary", use_container_width=True):
+        if st.button("🚀 Process Batch & Prepare Certificates", type="primary", use_container_width=True):
             if not st.session_state['uploaded_csv']:
                 st.warning("Please upload a CSV file in the 'Uploads' tool tab first.")
             else:
@@ -527,7 +527,7 @@ sample_v_url = https://sites.google.com/techvalley.pk/saimagul/certificate?id={s
                 with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     for idx, row in df_recipients.iterrows():
                         cred_id = str(uuid.uuid4())
-                        v_url = f"https://certificate-tv.streamlit.app/?id={cred_id}"
+                        v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={cred_id}"
                         
                         cert_out = render_dynamic_certificate(
                             base_img, row['name'], row['course'], str(row['date']), cred_id, v_url, elem_cfg_final
@@ -543,6 +543,7 @@ sample_v_url = https://sites.google.com/techvalley.pk/saimagul/certificate?id={s
                         """, (cred_id, row['name'], row['email'], row['course'], str(row['date'])))
                         
                         processed_records.append({
+                            'Send': True,
                             'credential_id': cred_id,
                             'name': row['name'],
                             'email': row['email'],
@@ -556,13 +557,12 @@ sample_v_url = https://sites.google.com/techvalley.pk/saimagul/certificate?id={s
                 st.session_state['batch_processed'] = True
                 st.session_state['batch_zip'] = zip_buffer.getvalue()
                 st.session_state['batch_df'] = pd.DataFrame(processed_records)
-                st.success(f"Successfully prepared {count} custom certificates!")
+                st.success(f"🎉 Successfully prepared {count} custom certificates!")
 
-        # Post-Processing Actions (2 Options: Download OR Customized Batch Email)
         if st.session_state['batch_processed']:
-            st.subheader("Next Actions: Choose How to Proceed")
+            st.subheader("📦 Next Actions: Choose How to Proceed")
             
-            act_col1, act_col2 = st.columns([1, 1.2])
+            act_col1, act_col2 = st.columns([1, 1.4])
             
             with act_col1:
                 st.markdown("#### Option 1: Download ZIP Archive")
@@ -575,10 +575,9 @@ sample_v_url = https://sites.google.com/techvalley.pk/saimagul/certificate?id={s
                 )
                 
             with act_col2:
-                st.markdown("#### Option 2: Send Custom Email to CSV Users")
+                st.markdown("#### Option 2: Send Custom Email to Selected Users")
                 
-                # Customizable Email Template Expander
-                with st.expander("✉️ Customize Email Message Template", expanded=True):
+                with st.expander("✉️ Customize Email Message Template", expanded=False):
                     custom_subject = st.text_input("Subject Line", value="Your Official Digital Certificate is Ready!", key="post_email_subj")
                     
                     default_body_template = """Hi {{recipient_name}},
@@ -593,19 +592,40 @@ Digital Credential Verification Link:
 Credential ID: {{credential_id}}
 
 Best regards,
-Tech Valley"""
+Mental Health First Aid Organization"""
 
                     custom_body = st.text_area("Email Body Template", value=default_body_template, height=180, key="post_email_body")
                     st.caption("Placeholders: `{{recipient_name}}`, `{{course_name}}`, `{{credential_id}}`, `{{verification_url}}`")
 
-                if st.button("📨 Send Custom Email to Users in CSV", type="primary", use_container_width=True):
-                    if st.session_state['batch_df'] is not None:
-                        send_custom_batch_emails(st.session_state['batch_df'], custom_subject, custom_body)
+                st.markdown("##### 👥 Select Recipients to Email")
+                edited_df = st.data_editor(
+                    st.session_state['batch_df'],
+                    column_config={
+                        "Send": st.column_config.CheckboxColumn(
+                            "Send Email?",
+                            help="Select to include user in email dispatch",
+                            default=True,
+                        ),
+                        "name": "Recipient Name",
+                        "email": "Email Address",
+                        "course": "Course Title",
+                        "credential_id": "Credential ID"
+                    },
+                    disabled=["credential_id", "name", "email", "course"],
+                    hide_index=True,
+                    use_container_width=True
+                )
+
+                selected_users = edited_df[edited_df['Send'] == True]
+
+                if st.button(f"📨 Send Email to Selected Users ({len(selected_users)})", type="primary", use_container_width=True):
+                    send_custom_batch_emails(selected_users, custom_subject, custom_body)
+
 # ------------------------------------------
 # TAB 2: EMAIL DISTRIBUTION ENGINE
 # ------------------------------------------
 with tabs[1]:
-    st.header("Email Distribution")
+    st.header("Email Distribution Engine")
     st.caption("Select specific issued records from the database and dispatch customized email credentials.")
 
     col_smtp, col_template = st.columns([1, 1.2])
@@ -632,7 +652,7 @@ Digital Credential Verification Link:
 Credential ID: {{credential_id}}
 
 Best regards,
-Tech Valley"""
+Mental Health First Aid Organization"""
 
         email_body = st.text_area("Email Body Template", value=default_gmail_body, height=180, key="tab2_email_body")
         st.caption("Placeholders: `{{recipient_name}}`, `{{course_name}}`, `{{credential_id}}`, `{{verification_url}}`")
@@ -640,7 +660,6 @@ Tech Valley"""
     st.divider()
     st.subheader("👥 Select Issued Records to Email")
 
-    # Fetch all issued credentials from SQLite database
     conn = sqlite3.connect(DB_FILE)
     df_db_records = pd.read_sql_query(
         "SELECT credential_id, recipient_name as name, email, course_name as course, issue_date FROM credentials ORDER BY created_at DESC", 
@@ -651,10 +670,8 @@ Tech Valley"""
     if df_db_records.empty:
         st.info("No credentials found in the database. Generate certificates in Tab 1 first.")
     else:
-        # Insert 'Send' checkbox column defaulted to True
         df_db_records.insert(0, "Send", True)
 
-        # Render interactive table selector
         selected_db_df = st.data_editor(
             df_db_records,
             column_config={
@@ -675,7 +692,6 @@ Tech Valley"""
             key="tab2_user_selector"
         )
 
-        # Filter for checked users only
         target_recipients = selected_db_df[selected_db_df['Send'] == True]
 
         if st.button(f"📨 Dispatch Emails to Selected Records ({len(target_recipients)})", type="primary", use_container_width=True):
