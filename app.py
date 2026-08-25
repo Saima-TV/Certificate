@@ -219,7 +219,11 @@ def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template
         server.login(sender_email, app_password)
 
         for idx, row in df_recipients.iterrows():
-            v_url = f"https://certificate-tv.streamlit.app/?id={row['credential_id']}"
+        # Replace the old Streamlit base URL:
+        # v_url = f"https://certificate-tv.streamlit.app/?id={row['credential_id']}"
+
+        # With your Google Site Verification URL:
+        v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={row['credential_id']}"
             custom_body = custom_body_template.replace("{{recipient_name}}", str(row['name']))\
                                               .replace("{{course_name}}", str(row['course']))\
                                               .replace("{{credential_id}}", str(row['credential_id']))\
@@ -284,7 +288,11 @@ if target_id:
         col_cert, col_meta = st.columns([1.6, 1])
         
         base_template = create_default_template("Classic Blue")
-        v_url = f"https://certificate-tv.streamlit.app/?id={c_id}"
+        # Replace the old Streamlit base URL:
+# v_url = f"https://certificate-tv.streamlit.app/?id={c_id}"
+# With your Google Site Verification URL:
+v_url = f"https://sites.google.com/techvalley.pk/saimagul/certificate?id={cid}"
+        
         
         default_cfg = {
             'title': {'show': True, 'text': 'Certificate of Participation', 'x': 250, 'y': 100, 'size': 44, 'color': '#1E3A8A'},
@@ -479,7 +487,12 @@ with tabs[0]:
             base_img = create_default_template(st.session_state['template_style'])
 
         sample_uuid = "916bc487-09cc-4659-9794-a7072dd65ec7"
-        sample_v_url = f"https://certificate-tv.streamlit.app/?id={sample_uuid}"
+        #sample_v_url = f"https://certificate-tv.streamlit.app/?id={sample_uuid}"
+        
+# With your Google Site Verification URL:
+sample_v_url = https://sites.google.com/techvalley.pk/saimagul/certificate?id={sample_uuid}"
+ 
+
 
         preview_canvas = render_dynamic_certificate(
             base_img,
