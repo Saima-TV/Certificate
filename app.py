@@ -342,11 +342,11 @@ if target_id:
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("igital Credential Management Platform")
+st.title("Digital Credential Management Platform")
 
 tabs = st.tabs([
-    "1. Graphic Designer & Template Engine",
-    "2. Email Distribution Engine",
+    "1. Certificate Template",
+    "2. Email Distribution",
     "3. Analytics Dashboard",
     "4. Credentials Registry"
 ])
