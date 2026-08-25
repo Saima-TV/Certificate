@@ -78,8 +78,7 @@ def seed_dummy_data():
     
     if count == 0:
         dummy_creds = [
-            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "Mental Health First Aid Standard", "2026-08-19", "VALID"),
-            ("812ab341-12cd-4123-8821-b6072dd54fa1", "Alex Chen", "alex@example.com", "AI Bootcamp 17", "2026-08-17", "VALID")
+            ("916bc487-09cc-4659-9794-a7072dd65ec7", "Saima Gul", "saima@example.com", "Tech Valley", "2026-08-19", "VALID")
         ]
         cursor.executemany("""
             INSERT INTO credentials (credential_id, recipient_name, email, course_name, issue_date, status)
@@ -251,7 +250,7 @@ def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template
 # 3. PAGE CONFIG & HIDE FOOTER
 # ==========================================
 st.set_page_config(
-    page_title="Digital Credential Engine",
+    page_title="Tech Valley Digital Credential",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -287,7 +286,7 @@ if target_id:
     record = cursor.fetchone()
     conn.close()
 
-    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>🎓 Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>Digital Credential Verification Portal</h2>", unsafe_allow_html=True)
     
     if not record:
         st.error(f"❌ Invalid Credential ID: `{target_id}`. Verification failed.")
@@ -303,7 +302,7 @@ if target_id:
         
         default_cfg = {
             'title': {'show': True, 'text': 'Certificate of Participation', 'x': 250, 'y': 100, 'size': 44, 'color': '#1E3A8A'},
-            'issuer': {'show': True, 'text': 'Mental Health First Aid Organization', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
+            'issuer': {'show': True, 'text': 'Tech Valley', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
             'name': {'show': True, 'x': 250, 'y': 280, 'size': 48, 'color': '#1E293B', 'placeholders': False},
             'course': {'show': True, 'prefix': 'has completed', 'x': 250, 'y': 380, 'size': 28, 'color': '#0F172A'},
             'desc': {'show': True, 'text': 'Participants learn skills for providing support to individuals in need.', 'x': 250, 'y': 440, 'size': 16, 'color': '#64748B'},
@@ -348,22 +347,22 @@ if target_id:
             st.markdown(f'<a href="{linkedin_share_url}" target="_blank"><button style="width:100%; background-color:#0A66C2; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Add to LinkedIn Profile</button></a>', unsafe_allow_html=True)
 
             st.markdown("---")
-            if st.button("← Back to Admin Console"):
-                st.query_params.clear()
-                st.rerun()
+          #  if st.button("← Back to Admin Console"):
+           #     st.query_params.clear()
+            #    st.rerun()
 
     st.stop()
 
 # ==========================================
 # 5. ADMIN PLATFORM ENGINE
 # ==========================================
-st.title("🎓 Digital Credential Management Platform")
+st.title("Digital Credential Management Platform")
 
 tabs = st.tabs([
-    "🎨 1. Graphic Designer & Template Engine",
-    "📧 2. Email Distribution Engine",
-    "📈 3. Analytics Dashboard",
-    "🔍 4. Credentials Registry"
+    "1. Certificate Template",
+    "2. Email Distribution",
+    "3. Analytics Dashboard",
+    "4. Credentials Registry"
 ])
 
 # ------------------------------------------
@@ -485,7 +484,7 @@ with tabs[0]:
     }
 
     with col_studio:
-        st.subheader("🎨 Studio Live Canvas Preview")
+        st.subheader("Studio Live Preview")
 
         if st.session_state['uploaded_bg']:
             base_img = Image.open(st.session_state['uploaded_bg'])
@@ -508,7 +507,7 @@ with tabs[0]:
 
         st.divider()
         
-        if st.button("🚀 Process Batch & Prepare Certificates", type="primary", use_container_width=True):
+        if st.button("Process Batch & Prepare Certificates", type="primary", use_container_width=True):
             if not st.session_state['uploaded_csv']:
                 st.warning("Please upload a CSV file in the 'Uploads' tool tab first.")
             else:
@@ -557,10 +556,10 @@ with tabs[0]:
                 st.session_state['batch_processed'] = True
                 st.session_state['batch_zip'] = zip_buffer.getvalue()
                 st.session_state['batch_df'] = pd.DataFrame(processed_records)
-                st.success(f"🎉 Successfully prepared {count} custom certificates!")
+                st.success(f"Successfully prepared {count} custom certificates!")
 
         if st.session_state['batch_processed']:
-            st.subheader("📦 Next Actions: Choose How to Proceed")
+            st.subheader("Next Actions: Choose How to Proceed")
             
             act_col1, act_col2 = st.columns([1, 1.4])
             
@@ -592,12 +591,12 @@ Digital Credential Verification Link:
 Credential ID: {{credential_id}}
 
 Best regards,
-Mental Health First Aid Organization"""
+Tech Valley"""
 
                     custom_body = st.text_area("Email Body Template", value=default_body_template, height=180, key="post_email_body")
                     st.caption("Placeholders: `{{recipient_name}}`, `{{course_name}}`, `{{credential_id}}`, `{{verification_url}}`")
 
-                st.markdown("##### 👥 Select Recipients to Email")
+                st.markdown("##### Select Recipients to Email")
                 # Interactive Table Selector for Specific Users
                 edited_df = st.data_editor(
                     st.session_state['batch_df'],
@@ -619,7 +618,7 @@ Mental Health First Aid Organization"""
 
                 selected_users = edited_df[edited_df['Send'] == True]
 
-                if st.button(f"📨 Send Email to Selected Users ({len(selected_users)})", type="primary", use_container_width=True):
+                if st.button(f"Send Email to Selected Users ({len(selected_users)})", type="primary", use_container_width=True):
                     send_custom_batch_emails(selected_users, custom_subject, custom_body)
 
 # ------------------------------------------
@@ -632,13 +631,13 @@ with tabs[1]:
     col_smtp, col_template = st.columns([1, 1.2])
 
     with col_smtp:
-        st.subheader("✉️ Sender Configuration")
+        st.subheader("Sender Configuration")
         default_sender = st.secrets.get("GMAIL_ADDRESS", "your.email@gmail.com") if hasattr(st, "secrets") else "your.email@gmail.com"
         sender_email = st.text_input("Sender Email Address", value=default_sender, key="tab2_sender_email")
         st.info("🔒 **Security Active:** Passwords and SMTP authentication credentials are automatically loaded securely from backend Secrets.")
 
     with col_template:
-        st.subheader("📧 Email Message Template")
+        st.subheader("Email Message Template")
         email_subject = st.text_input("Subject Line", value="Your Official Digital Certificate is Ready!", key="tab2_email_subj")
         
         default_gmail_body = """Hi {{recipient_name}},
@@ -653,13 +652,13 @@ Digital Credential Verification Link:
 Credential ID: {{credential_id}}
 
 Best regards,
-Mental Health First Aid Organization"""
+Tech Valley"""
 
         email_body = st.text_area("Email Body Template", value=default_gmail_body, height=180, key="tab2_email_body")
         st.caption("Placeholders: `{{recipient_name}}`, `{{course_name}}`, `{{credential_id}}`, `{{verification_url}}`")
 
     st.divider()
-    st.subheader("👥 Select Issued Records to Email")
+    st.subheader("Select Issued Records to Email")
 
     # Fetch all issued credentials from SQLite database
     conn = sqlite3.connect(DB_FILE)
@@ -699,7 +698,7 @@ Mental Health First Aid Organization"""
         # Filter for checked users only
         target_recipients = selected_db_df[selected_db_df['Send'] == True]
 
-        if st.button(f"📨 Dispatch Emails to Selected Records ({len(target_recipients)})", type="primary", use_container_width=True):
+        if st.button(f"Dispatch Emails to Selected Records ({len(target_recipients)})", type="primary", use_container_width=True):
             send_custom_batch_emails(target_recipients, email_subject, email_body)
 
 # ------------------------------------------
