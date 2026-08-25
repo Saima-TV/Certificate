@@ -240,7 +240,7 @@ def send_custom_batch_emails(df_recipients, custom_subject, custom_body_template
             progress_bar.progress((idx + 1) / len(df_recipients))
 
         server.quit()
-        st.success(f"✅ Dispatched {success_count} emails successfully to selected recipients!")
+        st.success(f"Dispatched {success_count} emails successfully to selected recipients!")
         return True
     except Exception as e:
         st.error(f"SMTP Error: {e}")
@@ -371,7 +371,7 @@ tabs = st.tabs([
 with tabs[0]:
     defaults = {
         't_show': True, 't_text': 'Certificate of Participation', 't_size': 42, 't_color': '#1E3A8A', 't_x': 200, 't_y': 100,
-        'iss_show': True, 'iss_text': 'Mental Health First Aid Organization', 'iss_size': 20, 'iss_color': '#3B82F6',
+        'iss_show': True, 'iss_text': 'Tech Valley', 'iss_size': 20, 'iss_color': '#3B82F6',
         'desc_show': True, 'desc_text': 'Participants learn skills for providing initial help to individuals experiencing mental health challenges.', 'desc_size': 15, 'desc_color': '#475569', 'desc_x': 200, 'desc_y': 450,
         'n_show': True, 'n_use_brackets': True, 'n_size': 48, 'n_color': '#0F172A', 'n_x': 200, 'n_y': 280,
         'c_show': True, 'c_prefix': 'has completed', 'c_size': 26, 'c_color': '#1E293B', 'c_x': 200, 'c_y': 380,
