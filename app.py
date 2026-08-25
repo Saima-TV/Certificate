@@ -288,7 +288,7 @@ if target_id:
         
         default_cfg = {
             'title': {'show': True, 'text': 'Certificate of Participation', 'x': 250, 'y': 100, 'size': 44, 'color': '#1E3A8A'},
-            'issuer': {'show': True, 'text': 'Mental Health First Aid Organization', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
+            'issuer': {'show': True, 'text': 'Tech Valley', 'x': 250, 'y': 160, 'size': 20, 'color': '#3B82F6'},
             'name': {'show': True, 'x': 250, 'y': 280, 'size': 48, 'color': '#1E293B', 'placeholders': False},
             'course': {'show': True, 'prefix': 'has completed', 'x': 250, 'y': 380, 'size': 28, 'color': '#0F172A'},
             'desc': {'show': True, 'text': 'Participants learn skills for providing support to individuals in need.', 'x': 250, 'y': 440, 'size': 16, 'color': '#64748B'},
@@ -333,9 +333,9 @@ if target_id:
             st.markdown(f'<a href="{linkedin_share_url}" target="_blank"><button style="width:100%; background-color:#0A66C2; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Add to LinkedIn Profile</button></a>', unsafe_allow_html=True)
 
             st.markdown("---")
-            if st.button("← Back to Admin Console"):
-                st.query_params.clear()
-                st.rerun()
+           # if st.button("← Back to Admin Console"):
+           #     st.query_params.clear()
+            #    st.rerun()
 
     st.stop()
 
