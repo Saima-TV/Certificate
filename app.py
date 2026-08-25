@@ -346,8 +346,8 @@ st.title("Digital Credential Management Platform")
 
 tabs = st.tabs([
     "1. Certificate Template",
-    "2. Email Distribution",
-    "3. Analytics Dashboard",
+ #   "2. Email Distribution",
+ #   "3. Analytics Dashboard",
     "4. Credentials Registry"
 ])
 
